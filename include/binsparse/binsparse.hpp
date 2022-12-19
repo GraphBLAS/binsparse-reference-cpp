@@ -5,6 +5,9 @@
 #include <binsparse/containers/matrices.hpp>
 #include "hdf5_tools.hpp"
 #include <memory>
+#include <type_traits>
+
+#include <binsparse/c_bindings/allocator_wrapper.hpp>
 
 namespace binsparse {
 
@@ -50,7 +53,7 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
     auto ncols = data["shape"][1];
     auto nnz = data["nnz"];
 
-    typename std::allocator_traits<Allocator>:: template rebind_alloc<I> i_alloc(alloc);
+    typename std::allocator_traits<std::remove_cvref_t<Allocator>>:: template rebind_alloc<I> i_alloc(alloc);
 
     auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
     auto rows = hdf5_tools::read_dataset<I>(f, "indices_0", i_alloc);
@@ -62,7 +65,7 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
   }
 }
 
-template <typename T, typename I = std::size_t>
+template <typename T, typename I>
 coo_matrix<T, I> read_coo_matrix(std::string fname) {
   return read_coo_matrix<T, I>(fname, std::allocator<T>{});
 }
