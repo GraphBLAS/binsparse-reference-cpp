@@ -198,7 +198,7 @@ bc_type_code ;
 //          index [0] = non-NULL, of size npointer [0]
 //          index [1] = NULL
 //          values: size nvals = m * npointer [0], or 1 if iso
-//
+
 //      Are all 16 formats possible?
 //          (Full, Sparse, Hyper, Index) x (Full, Sparse, Hyper, Index) ?
 //          I think the last dimension must be Full or Index, which leads to
@@ -211,21 +211,76 @@ bc_type_code ;
 //              (Full, Full)        full
 //              (Hyper, Full)       hyper-full
 //
-//          not described aboce:
+//          not described above:
 //
 //              (Index, Full)       can be defined, looks useful.  An unorderd
 //                                  set of full vectors.
 //              (Sparse, Full)      can be defined but not useful?
-//              (Full, Index)       huh?
+//              (Full, Index)       huh?  See Rule (2) below.
 //
+
 //      bitmap format: held as two full bc_matrices with same dimension and
 //          axis_order.  The first matrix ('bitmap' pattern) is always bool.
 //          The second full matrix holds the values.
 //          Format of both bc_matrices is (Full, Full)
 
+// I think a few rules might work:
+//
+// (1) from left to right, if a "Full" format appears, the remaining
+//      formats must all be Full.
+//
+// (2) the last format must be "Index" or "Full".
+
+
 // rank = 3?
 //
-//      describe some for future extensions
+//      describe some for future extensions.  Possible formats, a subset
+//      of (4 x 4 x 2) = 32 formats (rule 1) minus the 10 formats that break
+//      rule 2.  Some of these can be described but are not useful.
+//      This results in 22 possible formats ... I think.  Of those,
+//      at least 4 are not useful (, ... Sparse, Full, ...)
+
+//      (Index , Index , Index)
+//      (Index , Hyper , Index)
+//      (Index , Sparse, Index)
+//      (Index , Full,   Index)     not possible (rule 2)
+
+//      (Hyper , Index , Index)
+//      (Hyper , Hyper , Index)
+//      (Hyper , Sparse, Index)
+//      (Hyper , Full  , Index)     not possible (rule 2)
+
+//      (Sparse, Index , Index)
+//      (Sparse, Hyper , Index)
+//      (Sparse, Sparse, Index)
+//      (Sparse, Full  , Index)     not possible (rule 2)
+
+//      (Full  , Index , Index)     not possible (rule 2)
+//      (Full  , Hyper , Index)     not possible (rule 2)
+//      (Full  , Sparse, Index)     not possible (rule 2)
+//      (Full  , Full  , Index)     not possible (rule 2)
+
+//      (Index , Index , Full )
+//      (Index , Hyper , Full )
+//      (Index , Sparse, Full )     ok but not useful?
+//      (Index , Full  , Full )
+
+//      (Hyper , Index , Full )
+//      (Hyper , Hyper , Full )
+//      (Hyper , Sparse, Full )     ok but not useful?
+//      (Hyper , Full  , Full )
+
+//      (Sparse, Index , Full )
+//      (Sparse, Hyper , Full )
+//      (Sparse, Sparse, Full )     ok but not useful?
+//      (Sparse, Full  , Full )     ok but not useful?
+
+//      (Full  , Index , Full )     not possible (rule 2)
+//      (Full  , Hyper , Full )     not possible (rule 2)
+//      (Full  , Sparse, Full )     not possible (rule 2)
+//      (Full  , Full  , Full )
+
+
 
 #define KMAX 32     // maximum rank allowed.  Is 32 too large?
     // should each of the KMAX-sized arrays be dynamically allocated?
