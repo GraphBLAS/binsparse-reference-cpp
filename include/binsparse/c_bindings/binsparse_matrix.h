@@ -27,11 +27,13 @@
 typedef enum
 {
     bc_type_none    = 0,        // no type; values array is NULL (maybe?)
+    // unsigned types
     bc_type_bool    = 1,        // bool, assume sizeof(bool) == 1, as uint8_t
     bc_type_uint8   = 2,        // uint8_t
     bc_type_uint16  = 3,        // uint16_t
     bc_type_uint32  = 4,        // uint32_t
     bc_type_uint64  = 5,        // uint64_t
+    // signed types
     bc_type_int8    = 6,        // int8_t
     bc_type_int16   = 7,        // int16_t
     bc_type_int32   = 8,        // int32_t
@@ -40,6 +42,7 @@ typedef enum
     bc_type_fp64    = 11,       // double
     bc_type_fc32    = 12,       // float complex
     bc_type_fc64    = 13,       // double complex
+    // user-defined type
     bc_type_user    = 14,       // user-defined type
 }
 bc_type_code ;
@@ -51,26 +54,29 @@ bc_type_code ;
 // Each dimension k of a given n-D matrix can be in one of four formats,
 // listed in increasing order of sparsity:
 //
-// Index        some entries present, pointer[k] NULL,     index[k] non-NULL
-//              indices need not be
-//              in order, nor unique
+// pointer[k]   index[k]    Name and description
+// ----------   --------    --------------------
 //
-// Hyper        some entries present, pointer[k] non-NULL, index[k] non-NULL
-//              indices must be in
-//              order and unique.
-//              pointer [k] has size npointer [k]+1
-//              index [k] has size npointer [k]
+// NULL         non-NULL    "Index": some entries present.
+//                          indices need not be in order, nor unique.
 //
-// Sparse       all entries present,  pointer[k] non-NULL, index[k] NULL
-//              pointer [k] has size of
-//              dimension [axis_order[k]]+1.
+// non-NULL     non-NULL    "Hyper": some entries present.
+//                          indices must be in order and unique.  pointer [k]
+//                          has size npointer [k]+1 and must be monotonically
+//                          non-decreasing.  index [k] has size npointer [k]
 //
-// Full         all entries present,  pointer[k] NULL,     index[k] NULL
+// non-NULL     NULL        "Sparse": all entries present.
+//                          pointer [k] has size dimension [axis_order[k]]+1.
+//                          pointer [k] has size npointer [k]+1 and must be
+//                          monotonically non-decreasing.
+//
+// NULL         NULL        "Full": all entries present, 
 
 // The matrix format is determined by the presence of pointer [0:rank-1]
-// and index [0:rank-1].
+// and index [0:rank-1] (NULL or non-NULL).  There need not be any format
+// enum.
 
-// Common formats
+// Common formats:
 
 // rank = 0:    a scalar, no arrays present.  nvals = 0 or 1
 
@@ -192,6 +198,25 @@ bc_type_code ;
 //          index [0] = non-NULL, of size npointer [0]
 //          index [1] = NULL
 //          values: size nvals = m * npointer [0], or 1 if iso
+//
+//      Are all 16 formats possible?
+//          (Full, Sparse, Hyper, Index) x (Full, Sparse, Hyper, Index) ?
+//          I think the last dimension must be Full or Index, which leads to
+//          8 formats: (Full, Sparse, Hyper, Index) x (Full, Index).
+//          5 Listed above are:
+//
+//              (Index, Index)      COO
+//              (Sparse, Index)     CSR and CSC
+//              (Hyper, Index)      hypersparse by row or col
+//              (Full, Full)        full
+//              (Hyper, Full)       hyper-full
+//
+//          not described aboce:
+//
+//              (Index, Full)       can be defined, looks useful.  An unorderd
+//                                  set of full vectors.
+//              (Sparse, Full)      can be defined but not useful?
+//              (Full, Index)       huh?
 //
 //      bitmap format: held as two full bc_matrices with same dimension and
 //          axis_order.  The first matrix ('bitmap' pattern) is always bool.
