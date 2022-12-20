@@ -1,0 +1,4 @@
+# Ignore these files:
+*.o
+a.out
+.DS_Store
