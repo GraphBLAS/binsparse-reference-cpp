@@ -195,7 +195,7 @@ bc_type_code ;
 //          pointer [1] = NULL
 //          index [0] = non-NULL, of size nindex [0]
 //          index [1] = NULL
-//          in_order [0] = true
+//          in_order [0] = true or false
 //          in_order [1] = true
 //          values: size nvals = nindex [0]*n, or 1 if iso
 //
@@ -207,7 +207,7 @@ bc_type_code ;
 //          pointer [1] = NULL
 //          index [0] = non-NULL, of size nindex [0]
 //          index [1] = NULL
-//          in_order [0] = true
+//          in_order [0] = true or false
 //          in_order [1] = true
 //          values: size nvals = m * nindex [0], or 1 if iso
 
@@ -223,14 +223,14 @@ bc_type_code ;
 //              (Hyper, Index)      hypersparse by row or col
 //              (Full, Full)        full
 //              (Index, Full)       can be defined, looks useful.  An unordered
-//                                  set of full vectors.
+//                                  or ordered set of full vectors.
 //
 //          not described above:  either not useful or not valid
 //
-//              (Hyper, Full)       not useful (rule 4)
+//              (Hyper, Full)       not useful (see rule 4 below)
 //              (Sparse, Full)      can be defined but not useful?
-//                                  see rule 5 below
-//              (Full, Index)       huh?  See Rule (2) below.
+//                                  see rule 3 below
+//              (Full, Index)       huh?  See Rule (1) below.
 //
 //      bitmap format: held as two full bc_matrices with same dimension and
 //          axis_order.  The first matrix ('bitmap' pattern) is always bool.
@@ -256,7 +256,7 @@ bc_type_code ;
 // (5) Like rule 1, once "Index" appears, the remaining formats to the right
 //      must be "Index" or "Full".  This is because "Index" has no pointer so
 //      all formats to the right must have a known size, or be a list like
-//      (Index, Index, Full) where the total size (nvals) is enough.
+//      (Index, Index, Full) where the total size is given nindex [...].
 
 // rank = 3?
 //
@@ -288,11 +288,11 @@ bc_type_code ;
 //      (Full  , Sparse, Index)     not possible (rule 1)
 //      (Full  , Full  , Index)     not possible (rule 1)
 
-//    * (Index , Index , Full )     like COO, but each "entry" is an entire
+//    * (Index , Index , Full )     like 2D COO, but each "entry" is an entire
 //                                  dense vector
 //      (Index , Hyper , Full )     ok but not useful (rule 4)
 //      (Index , Sparse, Full )     ok but not useful? (rule 3)
-//    * (Index , Full  , Full )     Unordered list of 2D full matrices
+//    * (Index , Full  , Full )     a 1D list of 2D full matrices
 
 //    * (Hyper , Index , Full )     2D hypersparse, each entry a full vec. Nice
 //      (Hyper , Hyper , Full )     ok but not useful (rule 4)
