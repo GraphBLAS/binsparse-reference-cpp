@@ -59,18 +59,26 @@ bc_type_code ;
 //
 // NULL         non-NULL    "Index": some entries present.
 //                          indices need not be in order, nor unique.
+//                          size of index [k] array is nindex [k].
+//                          in_order [k] can be true or false.
 //
 // non-NULL     non-NULL    "Hyper": some entries present.
-//                          indices must be in order and unique.  pointer [k]
-//                          has size npointer [k]+1 and must be monotonically
-//                          non-decreasing.  index [k] has size npointer [k]
+//                          indices must be in order and unique.
+//                          index [k] has size nindex [k]
+//                          pointer [k] has size nindex [k]+1 and must be
+//                          monotonically non-decreasing.
+//                          in_order [k] must be true.
 //
 // non-NULL     NULL        "Sparse": all entries present.
 //                          pointer [k] has size dimension [axis_order[k]]+1.
-//                          pointer [k] has size npointer [k]+1 and must be
-//                          monotonically non-decreasing.
+//                          nindex [k] not used (or can be set to
+//                          dimension [axis_order[k]] for consistency).
+//                          in_order [k] must be true.
 //
-// NULL         NULL        "Full": all entries present, 
+// NULL         NULL        "Full": all entries present,
+//                          nindex [k] not used (or can be set to
+//                          dimension [axis_order[k]] for consistency).
+//                          in_order [k] must be true.
 
 // The matrix format is determined by the presence of pointer [0:rank-1]
 // and index [0:rank-1] (NULL or non-NULL).  There need not be any format
@@ -138,9 +146,9 @@ bc_type_code ;
 //      DCSR (hypersparse by-row): Format is (Hyper, Index)
 //
 //          axis_order = { 0, 1 }, stored by-row
-//          pointer [0] = non-NULL, of size npointer [0]+1
+//          pointer [0] = non-NULL, of size nindex [0]+1
 //          pointer [1] = NULL
-//          index [0] = non-NULL, of size npointer [0]
+//          index [0] = non-NULL, of size nindex [0]
 //          index [1] = col indices, size nvals
 //          in_order [0] = true
 //          in_order [1] = true if index [1] in ascending order, false otherwise
@@ -149,9 +157,9 @@ bc_type_code ;
 //      DCSC format (hypersparse by-col): Format is (Hyper, Index)
 //
 //          axis_order = { 1, 0 }, stored by-col
-//          pointer [0] = non-NULL, of size npointer [0]+1
+//          pointer [0] = non-NULL, of size nindex [0]+1
 //          pointer [1] = NULL
-//          index [0] = non-NULL, of size npointer [0]
+//          index [0] = non-NULL, of size nindex [0]
 //          index [1] = row indices, size nvals
 //          in_order [0] = true
 //          in_order [1] = true if index [1] in ascending order, false otherwise
@@ -179,27 +187,32 @@ bc_type_code ;
 //          in_order [1] = true
 //          values: size nvals = m*n, or 1 if iso
 //
-//      Hyper-Full format (held by row: each row is either full or all empty)
-//          Format is (Hyper, Full)
+//      Index-Full format (held by row: each row is either full or all empty)
+//          Format is (Index, Full)
 //
 //          axis_order = { 0, 1 }, stored by-row
-//          pointer [0] = non-NULL, of size npointer [0]+1
+//          pointer [0] = non-NULL, of size nindex [0]+1
 //          pointer [1] = NULL
-//          index [0] = non-NULL, of size npointer [0]
+//          index [0] = non-NULL, of size nindex [0]
 //          index [1] = NULL
-//          values: size nvals = npointer [0]*n, or 1 if iso
+//          in_order [0] = true
+//          in_order [1] = true
+//          values: size nvals = nindex [0]*n, or 1 if iso
 //
-//      Hyper-Full format (held by col: each col is either full or all empty)
-//          Format is (Hyper, Full)
+//      Index-Full format (held by col: each col is either full or all empty)
+//          Format is (Index, Full)
 //
 //          axis_order = { 1, 0 }, stored by-col
-//          pointer [0] = non-NULL, of size npointer [0]+1
+//          pointer [0] = non-NULL, of size nindex [0]+1
 //          pointer [1] = NULL
-//          index [0] = non-NULL, of size npointer [0]
+//          index [0] = non-NULL, of size nindex [0]
 //          index [1] = NULL
-//          values: size nvals = m * npointer [0], or 1 if iso
+//          in_order [0] = true
+//          in_order [1] = true
+//          values: size nvals = m * nindex [0], or 1 if iso
 
-//      Are all 16 formats possible?
+//      Are all 16 formats possible?  NO.  I think there are only 5.
+
 //          (Full, Sparse, Hyper, Index) x (Full, Sparse, Hyper, Index) ?
 //          I think the last dimension must be Full or Index, which leads to
 //          8 formats: (Full, Sparse, Hyper, Index) x (Full, Index).
@@ -209,16 +222,16 @@ bc_type_code ;
 //              (Sparse, Index)     CSR and CSC
 //              (Hyper, Index)      hypersparse by row or col
 //              (Full, Full)        full
-//              (Hyper, Full)       hyper-full
-//
-//          not described above:
-//
-//              (Index, Full)       can be defined, looks useful.  An unorderd
+//              (Index, Full)       can be defined, looks useful.  An unordered
 //                                  set of full vectors.
+//
+//          not described above:  either not useful or not valid
+//
+//              (Hyper, Full)       not useful (rule 4)
 //              (Sparse, Full)      can be defined but not useful?
+//                                  see rule 5 below
 //              (Full, Index)       huh?  See Rule (2) below.
 //
-
 //      bitmap format: held as two full bc_matrices with same dimension and
 //          axis_order.  The first matrix ('bitmap' pattern) is always bool.
 //          The second full matrix holds the values.
@@ -230,55 +243,71 @@ bc_type_code ;
 //      formats must all be Full.
 //
 // (2) the last format must be "Index" or "Full".
-
+//
+// (3) (... ,Sparse, Full, ...) can be defined but is not useful. It would be
+//      the less storage cost and same representation as ( ... Full, Full, ...).
+//      So do not support this format.
+//
+// (4) (... , Hyper, Full, ...) can be defined but is not useful.  The
+//      same thing can be done with (... , Index, Full, ...) where the Index
+//      dimension is sorted.  There's no need for the pointer for the Hyper
+//      dimension, since all objects to the right have the same size.
+//
+// (5) Like rule 1, once "Index" appears, the remaining formats to the right
+//      must be "Index" or "Full".  This is because "Index" has no pointer so
+//      all formats to the right must have a known size, or be a list like
+//      (Index, Index, Full) where the total size (nvals) is enough.
 
 // rank = 3?
 //
-//      describe some for future extensions.  Possible formats, a subset
-//      of (4 x 4 x 2) = 32 formats (rule 1) minus the 10 formats that break
-//      rule 2.  Some of these can be described but are not useful.
-//      This results in 22 possible formats ... I think.  Of those,
-//      at least 4 are not useful (, ... Sparse, Full, ...)
+//      describe some for future extensions.  Possible formats, a subset of
+//      (4 x 4 x 2) = 32 formats (rule 2) minus the 10 formats that break rule
+//      1.  Some of these can be described but are not useful (rules 3 to 5),
+//      This results in a total of 12 useful formats that could be supported.
 
-//      (Index , Index , Index)
-//      (Index , Hyper , Index)
-//      (Index , Sparse, Index)
-//      (Index , Full,   Index)     not possible (rule 2)
+//    * (Index , Index , Index)     all COO, nice
+//      (Index , Hyper , Index)     unordered list of 2D hypersparse matrices?
+//                                  but the first Index dimension has no pointer
+//                                  so it can't be used to find each 2D slice.
+//                                  Seems we need a rule 5.
+//      (Index , Sparse, Index)     see rule 5
+//      (Index , Full,   Index)     not possible (rule 1)
 
-//      (Hyper , Index , Index)
-//      (Hyper , Hyper , Index)
-//      (Hyper , Sparse, Index)
-//      (Hyper , Full  , Index)     not possible (rule 2)
+//    * (Hyper , Index , Index)     1D hyperlist of 2D COO matrices. Nice.
+//    * (Hyper , Hyper , Index)     1D hyperlist of 2D hypersparse mtx. Nice
+//    * (Hyper , Sparse, Index)     1D hyper list of 2D CSR/CSC matrices. Nice
+//      (Hyper , Full  , Index)     not possible (rule 1), also rule 4
 
-//      (Sparse, Index , Index)
-//      (Sparse, Hyper , Index)
-//      (Sparse, Sparse, Index)
-//      (Sparse, Full  , Index)     not possible (rule 2)
+//    * (Sparse, Index , Index)     1D dense array of 2D COO matrices. Nice.
+//    * (Sparse, Hyper , Index)     1D dense array of 2D hpyersparse. Nice.
+//    * (Sparse, Sparse, Index)     1D dense array of 2D CSR/CSR mtx, Nice.
+//      (Sparse, Full  , Index)     not possible (rule 1)
 
-//      (Full  , Index , Index)     not possible (rule 2)
-//      (Full  , Hyper , Index)     not possible (rule 2)
-//      (Full  , Sparse, Index)     not possible (rule 2)
-//      (Full  , Full  , Index)     not possible (rule 2)
+//      (Full  , Index , Index)     not possible (rule 1)
+//      (Full  , Hyper , Index)     not possible (rule 1)
+//      (Full  , Sparse, Index)     not possible (rule 1)
+//      (Full  , Full  , Index)     not possible (rule 1)
 
-//      (Index , Index , Full )
-//      (Index , Hyper , Full )
-//      (Index , Sparse, Full )     ok but not useful?
-//      (Index , Full  , Full )
+//    * (Index , Index , Full )     like COO, but each "entry" is an entire
+//                                  dense vector
+//      (Index , Hyper , Full )     ok but not useful (rule 4)
+//      (Index , Sparse, Full )     ok but not useful? (rule 3)
+//    * (Index , Full  , Full )     Unordered list of 2D full matrices
 
-//      (Hyper , Index , Full )
-//      (Hyper , Hyper , Full )
-//      (Hyper , Sparse, Full )     ok but not useful?
-//      (Hyper , Full  , Full )
+//    * (Hyper , Index , Full )     2D hypersparse, each entry a full vec. Nice
+//      (Hyper , Hyper , Full )     ok but not useful (rule 4)
+//      (Hyper , Sparse, Full )     ok but not useful? (rule 3)
+//      (Hyper , Full  , Full )     ok but not useful (rule 4)
 
-//      (Sparse, Index , Full )
-//      (Sparse, Hyper , Full )
-//      (Sparse, Sparse, Full )     ok but not useful?
-//      (Sparse, Full  , Full )     ok but not useful?
+//    * (Sparse, Index , Full )     1D dense array of 2D (Index,Full) Odd but ok
+//      (Sparse, Hyper , Full )     ok but not useful (rule 4)
+//      (Sparse, Sparse, Full )     ok but not useful? (rule 3)
+//      (Sparse, Full  , Full )     ok but not useful? (rule 3)
 
-//      (Full  , Index , Full )     not possible (rule 2)
-//      (Full  , Hyper , Full )     not possible (rule 2)
-//      (Full  , Sparse, Full )     not possible (rule 2)
-//      (Full  , Full  , Full )
+//      (Full  , Index , Full )     not possible (rule 1)
+//      (Full  , Hyper , Full )     not possible (rule 1), also rule 4
+//      (Full  , Sparse, Full )     not possible (rule 1)
+//    * (Full  , Full  , Full )
 
 
 
@@ -328,10 +357,11 @@ typedef struct
     // matrix content
 
     void *pointer [KMAX] ;      // set of pointers, of type pointer_type
-    uint64_t npointer [KMAX] ;  // pointer [k] has npointer [k]+1 entries
     size_t pointer_size [KMAX] ;// allocated size of each pointer[k] array
+                                // pointer [k] has nindex [k]+1 entries.
 
     void *index [KMAX] ;        // array of indices, of type index_type
+    uint64_t nindex [KMAX] ;    // index [k] has nindex [k] entries
     size_t index_size [KMAX] ;  // allocated size of each index[k] array
 
     void *values ;              // array of values, of type value_type
