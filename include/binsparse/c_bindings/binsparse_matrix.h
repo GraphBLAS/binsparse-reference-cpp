@@ -17,6 +17,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+// If compiling in C++, use `extern "C"` to declare C linkage.
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //------------------------------------------------------------------------------
 // type codes
 //------------------------------------------------------------------------------
@@ -39,9 +45,9 @@ typedef enum
     bc_type_uint64  = 8,        // uint64_t
     // signed types
     bc_type_int8    = 9,        // int8_t
-    bc_type_int16   = 10        // int16_t
-    bc_type_int32   = 11        // int32_t
-    bc_type_int64   = 12        // int64_t
+    bc_type_int16   = 10,       // int16_t
+    bc_type_int32   = 11,       // int32_t
+    bc_type_int64   = 12,       // int64_t
     bc_type_fp32    = 13,       // float
     bc_type_fp64    = 14,       // double
     bc_type_fc32    = 15,       // float complex
@@ -464,6 +470,10 @@ bc_matrix_struct ;
 
 // a bc_matrix is a pointer to the bc_matrix_struct shown above
 typedef bc_matrix_struct *bc_matrix ;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

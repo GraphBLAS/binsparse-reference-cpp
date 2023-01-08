@@ -53,7 +53,8 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
     auto ncols = data["shape"][1];
     auto nnz = data["nnz"];
 
-    typename std::allocator_traits<std::remove_cvref_t<Allocator>>:: template rebind_alloc<I> i_alloc(alloc);
+    typename std::allocator_traits<std::remove_cvref_t<Allocator>>
+       :: template rebind_alloc<I> i_alloc(alloc);
 
     auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
     auto rows = hdf5_tools::read_dataset<I>(f, "indices_0", i_alloc);
@@ -71,3 +72,5 @@ coo_matrix<T, I> read_coo_matrix(std::string fname) {
 }
 
 } // end binsparse
+
+#include <binsparse/c_bindings/bc_read_matrix.hpp>
