@@ -67,19 +67,63 @@ bc_type_code ;
 // pointer[k]   index[k]    Name and description
 // ----------   --------    --------------------
 //
-// NULL         non-NULL    "Index": some entries present.
+// NULL         NULL        "ELLPACK:4", because p is a simple stride [0 4 8 ...]
+//                          a possible extension.  a 2D ELLPACK:4 matrix has
+//                          4 entries in each row, in any columns.
+//
+//                          axis 0: nothing, name "L:4", one number: 4
+//
+//                          axis 1: index, [ size 40 ]
+//
+//                                  . x . x . x . . . x
+//                                  . . x . x . x x . .
+//                                  x . x x . . x . . .
+//                                  . x . . x . . x x .
+//                                  . . . x . x . x x .
+//                                  . . . . . x x x . x
+//                                  . . . x x x x . . .
+//                                  . x x . x x . . . .
+//                                  . . . . . . x x x x
+//                                  . . . x x x . x . .
+//                                  x x x . . . . . x .
+//
+//
+// NULL         non-NULL    "Index": some entries present. (Erik: "Sparse", not compressed, coo)
 //                          indices need not be in order, nor unique.
 //                          size of index [k] array is nindex [k].
 //                          in_order [k] can be true or false.
 //
-// non-NULL     non-NULL    "Hyper": some entries present.
+// NULL         non-NULL    "Hyper_ELLPACK:4", because p is a simple stride [0 4 8 ...]
+//
+//                                  rows: 0 2 5, each have 4 entries 
+//
+//                                  . x . x . x . . . x
+//                                  . . . . . . . . . .
+//                                  x . x x . . x . . .
+//                                  . . . . . . . . . .
+//                                  . . . . . . . . . .
+//                                  . . . . . x x x . x
+//                                  . . . . . . . . . .
+//                                  . . . . . . . . . .
+//                                  . . . . . . . . . .
+//                                  . . . . . . . . . .
+//                                  . . . . . . . . . .
+//
+//                                  (hyper-ELL:4, index)
+//
+//                                  axis 0:  index = [0 2 5]
+//
+//                                  axis 1:  index = [ size 12 ]
+//                                  any given row is empty, or has exactly 4 entries.
+//
+// non-NULL     non-NULL    "Hyper": some entries present. (Erik: "DC" "doubly compressed")
 //                          indices must be in order and unique.
 //                          index [k] has size nindex [k]
 //                          pointer [k] has size nindex [k]+1 and must be
 //                          monotonically non-decreasing.
 //                          in_order [k] must be true.
 //
-// non-NULL     NULL        "Sparse": all entries present.
+// non-NULL     NULL        "Sparse": all entries present. (Erik: "Compressed" or C)
 //                          pointer [k] has size dim [k]+1.
 //                          nindex [k] not used (or can be set to
 //                          dim [k] for consistency).
@@ -319,14 +363,153 @@ bc_type_code ;
 //      axis, since all objects to the right have the same size.
 //
 // (5) Like rule 1, once "Index" appears, the remaining formats to the right
-//      must be "Index" or "Full".  This is because "Index" has no pointer so
-//      all formats to the right must have a known size, or be a list like
-//      (Index, Index, Full) where the total size is given nindex [...].
+//      must be "Sparse, "Index" or "Full".  This is because "Index" has no
+//      pointer so all formats to the right must have a known size, or be a
+//      list like (Index, Index, Full) where the total size is given nindex
+//      [...].  "Sparse" has known size: it is the entire dimension.
+//
+// (6) (..., Hyper, Sparse, ...) can be defined but is not useful.
+//      The same can be done with (..., Index, Full, ...) by just deleting
+//      the pointer for the Hyper axis.  The pointer vector contains a
+//      list of constant stride (see below).
+
+/*
+    10-by-10-by-10:  suppose the 1st dimension is empty except for 0,2,5
+        suppose the axis order is 0,1,2 (all "by row")
+
+            axis 0: entry 0: a 2D matrix, containing 5 entries (say by row)
+            . . . . . . . . . .
+            . . x . . . . . . .
+            . . . . . . . . . .
+            . . . x x . x . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . x . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+
+            axis 0: entry 2: a 2D matrix, containing 7 entries
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . x . . . . . . x .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . x x x x .
+            . . . . . . . . . .
+            . x . . . . . . . .
+            . . . . . . . . . .
+
+            axis 0: entry 5: a 2D matrix, containing 3 entries
+            . . . . . . . . . .
+            x . . x . . . . . .
+            . . . . . x . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+
+    (Hyper, Sparse, Index): can be specified but has some useless info
+    0       2D matrix, 10-by-10, CSR, 5 entries
+    2       2D matrix, 10-by-10, CSR, 7 entries
+    5       2D matrix, 10-by-10, CSR, 3 entries
+
+    axis0:  index(0) = [0, 2, 5],  pointer(0) = [0 10 20 31=end], len = 3
+            Note that pointer(0) an array of size 3+1, is useless since
+            the next axis is "Sparse" so each has fixed size (of 10 each)
+
+    axis1:  pointer(1) = an array of size 31, since there are 3 objects
+            in the axis0 dimension.  Each object is a pointer of size 10
+            plus one end marker.
+
+            pointer(1) = [ 0 1 1 1 4 4 4 5 5 5 5 5 5 5 7 7 7 12 12 12 12 14 15 15 15 15 15 15 15 15 ]
+
+            0 1 2 3 4 5 6 7 8 9 -
+            . . . . . . . . . . 0 <= pointer for this 2D slice
+            . . x . . . . . . . 1
+            . . . . . . . . . . 1
+            . . . x x . x . . . 1
+            . . . . . . . . . . 4
+            . . . . . . . . . . 4
+            . . . . . . x . . . 4
+            . . . . . . . . . . 5
+            . . . . . . . . . . 5
+            . . . . . . . . . . 5
+
+            0 1 2 3 4 5 6 7 8 9 -
+            . . . . . . . . . . 5
+            . . . . . . . . . . 5
+            . . . . . . . . . . 5
+            . x . . . . . . x . 5
+            . . . . . . . . . . 7
+            . . . . . . . . . . 7
+            . . . . . x x x x . 7
+            . . . . . . . . . . 11
+            . x . . . . . . . . 12
+            . . . . . . . . . . 12
+
+            0 1 2 3 4 5 6 7 8 9 -
+            . . . . . . . . . . 12
+            x . . x . . . . . . 12
+            . . . . . x . . . . 14
+            . . . . . . . . . . 15
+            . . . . . . . . . . 15
+            . . . . . . . . . . 15
+            . . . . . . . . . . 15
+            . . . . . . . . . . 15
+            . . . . . . . . . . 15
+            . . . . . . . . . . 15
+                                15  <= end marker
+
+    axis2:  index(2) =   [ 2 3 4 6 6   1 8 6 7 8 9   0 3 5] 
+            an array of size 15
+
+    10-by-10-by-10
+    (Index, Sparse, Index)
+    Erik: (S-C-S)
+    0       2D matrix, 10-by-10, CSR, 5 entries
+    2       2D matrix, 10-by-10, CSR, 7 entries
+    5       2D matrix, 10-by-10, CSR, 3 entries
+
+    same as above, but drop pointer(0) as not needed.  So
+    this is better than (Hyper, Sparse, Index).
+
+    Consider duplicates:
+
+    10-by-10-by-10
+    (Index, Sparse, Index): with duplicate in axis 0.
+    Erik: (S-C-S)
+    0       2D matrix, 10-by-10, CSR, 5 entries
+    5       2D matrix, 10-by-10, CSR, 7 entries
+    5       2D matrix, 10-by-10, CSR, 3 entries
+
+    Here, the A(5,:,:) matrix is specified twice, so
+    A(5,:,:) is the sum of both 2D matrices, with a total
+    of 7 to 10 entries.  A dup operator can be specified,
+    or implied.
+
+consider a 10-by-20-by-30-by-40 tensor:
+
+    (Index, Index, Hyper, Index)   ugly with hack: requires look-ahead,
+        group order to indices.  Not allowed in this proposed format.
+
+    (Index, Sparse, Hyper, Index)   fine
+
+    (Index, Index, Sparse, Index)   fine
+
+    etc.
+
+    (Sparse, Hyper, Index, Index)   fine
+*/
 
 /*
 LANGUAGE OF VALID FORMATS
 
-These 5 rules lead to a simple finite-state machine that descibes the language
+These 6 rules lead to a simple finite-state machine that descibes the language
 of valid formats.  The starting state (0th rank) can be any of the four
 formats.  Each state has a self-loop (not shown).  The end state of the
 language must be Index or Full.
@@ -337,14 +520,14 @@ language must be Index or Full.
                                         |   fixed size
 
     "Sparse"                                "Index"
-    (pointer present  ------------------->  no pointer
+    (pointer present  <------------------>  no pointer
     no index.                               index present
     size is                                 size is
-    dim [k]   <---\                  /--->  nindex[k]
-           \       \                /                 \
-            \       \              /                   \
-             \       \            /                     \
-              \       \          /                       \
+    dim [k]                          /--->  nindex[k]
+           \                        /                 \
+            \                      /                   \
+             \                    /                     \
+              \                  /                       \
                \        "Hyper" /                         --->  "Full"
                 \-----> (both pointer                           no pointer
                         and index.                              no index
@@ -356,34 +539,42 @@ language must be Index or Full.
     NO INDEX        |           INDEX IS PRESENT            |   NO INDEX
     must be         |       in order if axis[k].in_order    |   must be
     in order        |       is true, unordered if false     |   in order
+                            but I would say "Hyper" must
+                            be in order with no duplicates.
 
 
 That is, the format can start with any mix of Sparse and/or Hyper (or none of
 them), in any order.  These formats have pointers so the size of the objects to
 the right of them can vary in size.
 
-The Sparse and Hyper formats have a pointer, so the objects they describe to
-the right of them in axis k+1 have variable sizes.
+The Sparse and Hyper formats have a pointer, so if the axis k is Sparse or Hyper,
+the objects they describe to the right of them in axis k+1 can have variable
+sizes (any format, but only Hyper has variable size).
 
 The Index and Full formats have no pointer, so the objects they describe
-in their axes and the axes to the right of them must have a fixed size.
+in their axes and the next axis to the right of them must have a fixed size
+(that is, Sparse, Index, or Full, but not Hyper).
 
 The Sparse and Full formats have no index, so their own size must be dim [k]
 if they describe the kth axis.  "Sparse" is short-hand for a dense list of
 objects, each of variable size.  "Full" is short-hand for a dense list of
 objects of fixed size.
 
+Regarding duplicates/out-of-order:  I think only the Index type of axis
+should allow for duplicates and out-of-order indices.  Duplicates are
+meant to be summed, in any axis.
+
 */
 
 // rank = 3
 //
-//      describe some for future extensions.  12 possible formats:
+//      possible formats:
 
 //      (Index , Index , Index)     all COO
+//      (Index , Sparse, Index)     1D list of 2D CSR/CSC matrices
 
 //      (Hyper , Index , Index)     1D hyperlist of 2D COO matrices
 //      (Hyper , Hyper , Index)     1D hyperlist of 2D hypersparse mtx
-//      (Hyper , Sparse, Index)     1D hyperlist of 2D CSR/CSC matrices
 
 //      (Sparse, Index , Index)     1D dense array of 2D COO matrices
 //      (Sparse, Hyper , Index)     1D dense array of 2D hypersparse
