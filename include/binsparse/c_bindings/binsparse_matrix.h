@@ -426,16 +426,18 @@ bc_type_code ;
             in the axis0 dimension.  Each object is a pointer of size 10
             plus one end marker.
 
-            pointer(1) = [ 0 1 1 1 4 4 4 5 5 5 5 5 5 5 7 7 7 12 12 12 12 14 15 15 15 15 15 15 15 15 ]
+            pointer(1) = [ 0  0  1  1  4  4  4  5  5  5
+                           5  5  5  5  7  7  7 11 11 12
+                          12 12 14 15 15 15 15 15 15 15 15 ]
 
             0 1 2 3 4 5 6 7 8 9 -
             . . . . . . . . . . 0 <= pointer for this 2D slice
-            . . x . . . . . . . 1
+            . . x . . . . . . . 0       (row 1)
             . . . . . . . . . . 1
-            . . . x x . x . . . 1
+            . . . x x . x . . . 1       (row 3)
             . . . . . . . . . . 4
             . . . . . . . . . . 4
-            . . . . . . x . . . 4
+            . . . . . . x . . . 4       (row 5): for (Hyper,Hyper,Index) below
             . . . . . . . . . . 5
             . . . . . . . . . . 5
             . . . . . . . . . . 5
@@ -444,18 +446,18 @@ bc_type_code ;
             . . . . . . . . . . 5
             . . . . . . . . . . 5
             . . . . . . . . . . 5
-            . x . . . . . . x . 5
+            . x . . . . . . x . 5       (row 3)
             . . . . . . . . . . 7
             . . . . . . . . . . 7
-            . . . . . x x x x . 7
+            . . . . . x x x x . 7       (row 6)
             . . . . . . . . . . 11
-            . x . . . . . . . . 12
+            . x . . . . . . . . 11      (row 8)
             . . . . . . . . . . 12
 
             0 1 2 3 4 5 6 7 8 9 -
             . . . . . . . . . . 12
-            x . . x . . . . . . 12
-            . . . . . x . . . . 14
+            x . . x . . . . . . 12      (row 2)
+            . . . . . x . . . . 14      (row 3)
             . . . . . . . . . . 15
             . . . . . . . . . . 15
             . . . . . . . . . . 15
@@ -477,6 +479,32 @@ bc_type_code ;
 
     same as above, but drop pointer(0) as not needed.  So
     this is better than (Hyper, Sparse, Index).
+
+    (Hyper, Hyper, Index):  this is useful
+    with the same 10-by-10-by-10 matrix above.
+
+        axis0:  index(0) = [0 2 5], size 3
+                pointer(0) = cumulative sum of (3, 3, 2) = [0 3 6 8], size 3+1
+                    since there are 3 non-empty rows in A(0,:,:),
+                    3 in A (2,:,:), and two in A(5,:,:),
+
+                    The pointer(0) value tells us where each matrix starts
+                    in axis1.
+
+        axis1:  index(1) = [ 1 3 5   3 6 8   2 3]
+                    since A(0,:,:) has nonempty rows 1,3,5
+                    A(2,:,:) has nonempty rows:      3,6,8
+                    A(5,:,:) has nonempty rows:      2,3
+                pointer(1) = [
+
+                pointer(1) = [ 0  1  4      size 3, end marker is next matrx
+                               5  7 11      size 3, end marker is next matrx
+                              12 14 15 ]    size 2 plus the end marker
+
+        axis2: same as (Index, Sparse, Index) case above.
+
+    (Index, Hyper, Index): invalid since the first axis0 has no way
+        to refer to variable-sized parts in axis1.
 
     Consider duplicates:
 
@@ -566,7 +594,7 @@ meant to be summed, in any axis.
 
 */
 
-// rank = 3
+// rank = 3, a tensor of dimension M-by-N-by-K.
 //
 //      possible formats:
 
@@ -578,7 +606,10 @@ meant to be summed, in any axis.
 
 //      (Sparse, Index , Index)     1D dense array of 2D COO matrices
 //      (Sparse, Hyper , Index)     1D dense array of 2D hypersparse
-//      (Sparse, Sparse, Index)     1D dense array of 2D CSR/CSR matrices
+//      (Sparse, Sparse, Index)     1D dense array of 2D CSR/CSR matrices,
+//                                  but note that the axis0 has a very simple
+//                                  pointer(0) = [0 N 2*N ... M*N M*N+1] of size M+1.
+//                                  if the matrix is M-by-N-by-K.
 
 //      (Index , Index , Full )     like 2D COO, but each "entry" is an entire
 //                                  dense vector
