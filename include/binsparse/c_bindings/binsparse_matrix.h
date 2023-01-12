@@ -520,18 +520,18 @@ language must be Index or Full.
                                         |   fixed size
 
     "Sparse"                                "Index"
-    (pointer present  <------------------>  no pointer
-    no index.                               index present
-    size is                                 size is
-    dim [k]                          /--->  nindex[k]
-           \                        /                 \
-            \                      /                   \
-             \                    /                     \
-              \                  /                       \
-               \        "Hyper" /                         --->  "Full"
-                \-----> (both pointer                           no pointer
-                        and index.                              no index
-                        size is                                 size is
+    (pointer present  <------------------>  no pointer   ---\
+    no index. --\                           index present   |
+    size is     |                           size is      <--/
+    dim [k]  <--/                      -->  nindex[k]
+           \                          /               \
+            \                        /                 \
+             \                      /                   \
+              \                    /                     \
+               \        "Hyper" <--                       --->  "Full"
+                \-----> (both pointer --\                       no pointer --\
+                        and index.      |                       no index     |
+                        size is      <--/                       size is  <---/
                         nindex [k]                              dim [k]
 
                     |                                       |
