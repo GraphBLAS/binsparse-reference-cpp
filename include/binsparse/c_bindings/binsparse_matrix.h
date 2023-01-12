@@ -362,11 +362,11 @@ bc_type_code ;
 //      axis is sorted.  There's no need for the pointer for the Hyper
 //      axis, since all objects to the right have the same size.
 //
-// (5) Like rule 1, once "Index" appears, the remaining formats to the right
+// (5) If "Index" appears, the format immediately to the right
 //      must be "Sparse, "Index" or "Full".  This is because "Index" has no
-//      pointer so all formats to the right must have a known size, or be a
-//      list like (Index, Index, Full) where the total size is given nindex
-//      [...].  "Sparse" has known size: it is the entire dimension.
+//      pointer so the format immediately to the right must have a known size.
+//      "Sparse" has known size: it is the entire size of its axis.  Thus,
+//      (..., Index, Hyper, ...) is not valid.
 //
 // (6) (..., Hyper, Sparse, ...) can be defined but is not useful.
 //      The same can be done with (..., Index, Full, ...) by just deleting
