@@ -4,10 +4,14 @@
 #include <nlohmann/json.hpp>
 #include <binsparse/containers/matrices.hpp>
 #include "hdf5_tools.hpp"
+#include "type_info.hpp"
 #include <memory>
 #include <type_traits>
 
 #include <binsparse/c_bindings/allocator_wrapper.hpp>
+#include <binsparse/matrix_market/matrix_market.hpp>
+
+#include <iostream>
 
 namespace binsparse {
 
@@ -27,16 +31,17 @@ void write_csr_matrix(std::string fname,
   hdf5_tools::write_dataset(f, "indices_1", colind);
   hdf5_tools::write_dataset(f, "pointers_to_1", row_ptr);
 
-  std::string json_string =
-  "{\n"
-  "  \"format\": \"CSR\",\n"
-  "  \"shape\": [";
-  json_string += std::to_string(m.m) + ", " + std::to_string(m.n) +
-  "],\n" +
-  "  \"nnz\": " + std::to_string(m.nnz) + "\n" +
-  "}\n";
+  using json = nlohmann::json;
+  json j;
+  j["binsparse"]["version"] = 0.5;
+  j["binsparse"]["format"] = "CSR";
+  j["binsparse"]["shape"] = {m.m, m.n};
+  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
+  j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
+  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
 
-  hdf5_tools::write_dataset(f, "metadata", json_string);
+  hdf5_tools::write_dataset(f, "metadata", j.dump(2));
 
   f.close();
 }
@@ -50,10 +55,10 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
   using json = nlohmann::json;
   auto data = json::parse(metadata);
 
-  if (data["format"] == "CSR") {
-    auto nrows = data["shape"][0];
-    auto ncols = data["shape"][1];
-    auto nnz = data["nnz"];
+  if (data["binsparse"]["format"] == "CSR") {
+    auto nrows = data["binsparse"]["shape"][0];
+    auto ncols = data["binsparse"]["shape"][1];
+    auto nnz = data["binsparse"]["nnz"];
 
     typename std::allocator_traits<std::remove_cvref_t<Allocator>>
        :: template rebind_alloc<I> i_alloc(alloc);
@@ -89,16 +94,17 @@ void write_coo_matrix(std::string fname,
   hdf5_tools::write_dataset(f, "indices_0", rowind);
   hdf5_tools::write_dataset(f, "indices_1", colind);
 
-  std::string json_string =
-  "{\n"
-  "  \"format\": \"COO\",\n"
-  "  \"shape\": [";
-  json_string += std::to_string(m.m) + ", " + std::to_string(m.n) +
-  "],\n" +
-  "  \"nnz\": " + std::to_string(m.nnz) + "\n" +
-  "}\n";
+  using json = nlohmann::json;
+  json j;
+  j["binsparse"]["version"] = 0.5;
+  j["binsparse"]["format"] = "COO";
+  j["binsparse"]["shape"] = {m.m, m.n};
+  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["data_types"]["indices_0"] = type_info<I>::label();
+  j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
+  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
 
-  hdf5_tools::write_dataset(f, "metadata", json_string);
+  hdf5_tools::write_dataset(f, "metadata", j.dump(2));
 
   f.close();
 }
@@ -112,10 +118,10 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
   using json = nlohmann::json;
   auto data = json::parse(metadata);
 
-  if (data["format"] == "COO") {
-    auto nrows = data["shape"][0];
-    auto ncols = data["shape"][1];
-    auto nnz = data["nnz"];
+  if (data["binsparse"]["format"] == "COO") {
+    auto nrows = data["binsparse"]["shape"][0];
+    auto ncols = data["binsparse"]["shape"][1];
+    auto nnz = data["binsparse"]["nnz"];
 
     typename std::allocator_traits<std::remove_cvref_t<Allocator>>
        :: template rebind_alloc<I> i_alloc(alloc);
