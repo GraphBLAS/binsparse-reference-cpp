@@ -8,19 +8,15 @@ template <typename T, typename I>
 void convert(std::string input_file, std::string output_file, std::string format, std::string comment) {
   if (format == "CSR") {
     std::cout << "Reading in " << input_file << "...\n";
-    grb::matrix<T, I> x("mouse_gene.mtx");
-    binsparse::csr_matrix<T, I> matrix{x.backend_.values_.data(), x.backend_.colind_.data(), x.backend_.rowptr_.data(), x.shape()[0], x.shape()[1], I(x.size())};
+    auto x = binsparse::__detail::mmread<T, I, binsparse::__detail::csr_matrix_owning<T, I>>(input_file);
+    binsparse::csr_matrix<T, I> matrix{x.values().data(), x.colind().data(), x.rowptr().data(), std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size())};
     binsparse::write_csr_matrix(output_file, matrix);
     std::cout << "Writing to binsparse file " << output_file << " using " << format << " format...\n";
   } else {
-    assert(false);
-    /*
-    std::cout << "Reading in " << input_file << "...\n";
-    grb::matrix<T, I, grb::coordinate> x("mouse_gene.mtx");
-    binsparse::coo_matrix<T, I> matrix{x.backend_.values_.data(), x.backend_.rowptr_.data(), x.backend_.colind_.data(), x.shape()[0], x.shape()[1], I(x.size())};
+    auto x = binsparse::__detail::mmread<T, I, binsparse::__detail::coo_matrix_owning<T, I>>(input_file);
+    binsparse::coo_matrix<T, I> matrix{x.values().data(), x.rowind().data(), x.colind().data(), std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size())};
     binsparse::write_coo_matrix(output_file, matrix);
     std::cout << "Writing to binsparse file " << output_file << " using " << format << " format...\n";
-    */
   }
 }
 
@@ -35,7 +31,7 @@ void convert(std::string input_file, std::string output_file, std::string type,
   } else if (type == "integer") {
     convert<int64_t, I>(input_file, output_file, format, comment);
   } else if (type == "pattern") {
-    convert<bool, I>(input_file, output_file, format, comment);
+    convert<uint8_t, I>(input_file, output_file, format, comment);
   }
 }
 
