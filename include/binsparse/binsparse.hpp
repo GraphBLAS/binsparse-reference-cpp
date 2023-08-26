@@ -19,7 +19,8 @@ namespace binsparse {
 
 template <typename T, typename I>
 void write_csr_matrix(std::string fname,
-                      csr_matrix<T, I> m) {
+                      csr_matrix<T, I> m,
+                      nlohmann::json user_keys = {}) {
 
   H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
 
@@ -40,6 +41,10 @@ void write_csr_matrix(std::string fname,
   j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  for (auto&& v : user_keys.items()) {
+    j[v.key()] = v.value();
+  }
 
   hdf5_tools::write_dataset(f, "metadata", j.dump(2));
 
@@ -82,7 +87,8 @@ csr_matrix<T, I> read_csr_matrix(std::string fname) {
 
 template <typename T, typename I>
 void write_coo_matrix(std::string fname,
-                      coo_matrix<T, I> m) {
+                      coo_matrix<T, I> m,
+                      nlohmann::json user_keys = {}) {
 
   H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
 
@@ -103,6 +109,10 @@ void write_coo_matrix(std::string fname,
   j["binsparse"]["data_types"]["indices_0"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+  
+  for (auto&& v : user_keys.items()) {
+    j[v.key()] = v.value();
+  }
 
   hdf5_tools::write_dataset(f, "metadata", j.dump(2));
 

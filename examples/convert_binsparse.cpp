@@ -5,16 +5,18 @@
 
 template <typename T, typename I>
 void convert_to_binsparse(std::string input_file, std::string output_file, std::string format, std::string comment) {
+  nlohmann::json user_keys;
+  user_keys["comment"] = comment;
   if (format == "CSR") {
     std::cout << "Reading in " << input_file << "...\n";
     auto x = binsparse::__detail::mmread<T, I, binsparse::__detail::csr_matrix_owning<T, I>>(input_file);
     binsparse::csr_matrix<T, I> matrix{x.values().data(), x.colind().data(), x.rowptr().data(), std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size())};
-    binsparse::write_csr_matrix(output_file, matrix);
+    binsparse::write_csr_matrix(output_file, matrix, user_keys);
     std::cout << "Writing to binsparse file " << output_file << " using " << format << " format...\n";
   } else {
     auto x = binsparse::__detail::mmread<T, I, binsparse::__detail::coo_matrix_owning<T, I>>(input_file);
     binsparse::coo_matrix<T, I> matrix{x.values().data(), x.rowind().data(), x.colind().data(), std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size())};
-    binsparse::write_coo_matrix(output_file, matrix);
+    binsparse::write_coo_matrix(output_file, matrix, user_keys);
     std::cout << "Writing to binsparse file " << output_file << " using " << format << " format...\n";
   }
 }
