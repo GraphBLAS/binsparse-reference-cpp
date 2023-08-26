@@ -141,6 +141,21 @@ coo_matrix<T, I> read_coo_matrix(std::string fname) {
   return read_coo_matrix<T, I>(fname, std::allocator<T>{});
 }
 
+inline auto inspect(std::string fname) {
+  H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
+
+  auto metadata = hdf5_tools::read_dataset<char>(f, "metadata");
+
+  using json = nlohmann::json;
+  auto data = json::parse(metadata);
+
+  if (data["binsparse"]["version"] >= 0.1) {
+    return data;
+  } else {
+    assert(false);
+  }
+}
+
 } // end binsparse
 
 #include <binsparse/c_bindings/bc_read_matrix.hpp>
