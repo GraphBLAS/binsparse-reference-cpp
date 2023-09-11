@@ -11,8 +11,6 @@
 #include <binsparse/c_bindings/allocator_wrapper.hpp>
 #include <binsparse/matrix_market/matrix_market.hpp>
 
-#include <iostream>
-
 namespace binsparse {
 
 // CSR Format
@@ -46,7 +44,7 @@ void write_csr_matrix(std::string fname,
     j[v.key()] = v.value();
   }
 
-  hdf5_tools::write_dataset(f, "metadata", j.dump(2));
+  hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
 
   f.close();
 }
@@ -60,10 +58,12 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
   using json = nlohmann::json;
   auto data = json::parse(metadata);
 
-  if (data["binsparse"]["format"] == "CSR") {
-    auto nrows = data["binsparse"]["shape"][0];
-    auto ncols = data["binsparse"]["shape"][1];
-    auto nnz = data["binsparse"]["nnz"];
+  auto binsparse_metadata = data["binsparse"];
+
+  if (binsparse_metadata["format"] == "CSR") {
+    auto nrows = binsparse_metadata["shape"][0];
+    auto ncols = binsparse_metadata["shape"][1];
+    auto nnz = binsparse_metadata["nnz"];
 
     typename std::allocator_traits<std::remove_cvref_t<Allocator>>
        :: template rebind_alloc<I> i_alloc(alloc);
@@ -114,7 +114,7 @@ void write_coo_matrix(std::string fname,
     j[v.key()] = v.value();
   }
 
-  hdf5_tools::write_dataset(f, "metadata", j.dump(2));
+  hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
 
   f.close();
 }
@@ -128,10 +128,12 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
   using json = nlohmann::json;
   auto data = json::parse(metadata);
 
-  if (data["binsparse"]["format"] == "COO") {
-    auto nrows = data["binsparse"]["shape"][0];
-    auto ncols = data["binsparse"]["shape"][1];
-    auto nnz = data["binsparse"]["nnz"];
+  auto binsparse_metadata = data["binsparse"];
+
+  if (binsparse_metadata["format"] == "COO") {
+    auto nrows = binsparse_metadata["shape"][0];
+    auto ncols = binsparse_metadata["shape"][1];
+    auto nnz = binsparse_metadata["nnz"];
 
     typename std::allocator_traits<std::remove_cvref_t<Allocator>>
        :: template rebind_alloc<I> i_alloc(alloc);
@@ -154,12 +156,14 @@ coo_matrix<T, I> read_coo_matrix(std::string fname) {
 inline auto inspect(std::string fname) {
   H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
 
-  auto metadata = hdf5_tools::read_dataset<char>(f, "metadata");
+  auto metadata = hdf5_tools::get_attribute(f, "binsparse");
 
   using json = nlohmann::json;
   auto data = json::parse(metadata);
 
-  if (data["binsparse"]["version"] >= 0.1) {
+  auto binsparse_metadata = data["binsparse"];
+
+  if (binsparse_metadata["version"] >= 0.1) {
     return data;
   } else {
     assert(false);

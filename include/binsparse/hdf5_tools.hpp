@@ -5,6 +5,8 @@
 #include <ranges>
 #include <H5Cpp.h>
 
+#include <iostream>
+
 namespace hdf5_tools {
 
 template <typename U>
@@ -119,8 +121,8 @@ inline H5::PredType get_type(H5::DataSet& dataset) {
   }
 }
 
-template <std::ranges::contiguous_range R>
-void write_dataset(H5::H5File& f, const std::string& label, R&& r) {
+template <typename H5GroupOrFile, std::ranges::contiguous_range R>
+void write_dataset(H5GroupOrFile& f, const std::string& label, R&& r) {
   using T = std::ranges::range_value_t<R>;
   hsize_t size = std::ranges::size(r);
   H5::DataSpace dataspace(1, &size);
@@ -131,8 +133,32 @@ void write_dataset(H5::H5File& f, const std::string& label, R&& r) {
   dataspace.close();
 }
 
-template <typename T, typename Allocator>
-std::span<T> read_dataset(H5::H5File& f, const std::string& label, Allocator&& alloc) {
+inline std::string get_attribute(H5::H5Object& f, const std::string& key) {
+  auto attribute = f.openAttribute(key.c_str());
+
+  std::size_t size = attribute.getStorageSize();
+
+  auto type = attribute.getDataType();
+  std::string attribute_string(" ", size);
+
+  attribute.read(type, attribute_string);
+
+  return attribute_string;
+}
+
+inline void set_attribute(H5::H5Object& f, const std::string& key, const std::string& value) {
+  hsize_t size = value.size();
+  H5::DataSpace dataspace(1, &size);
+
+  f.createAttribute(key.c_str(), H5::PredType::NATIVE_CHAR, dataspace);
+
+  auto attribute = f.openAttribute(key.c_str());
+
+  attribute.write(H5::PredType::NATIVE_CHAR, value.data());
+}
+
+template <typename T, typename Allocator, typename H5GroupOrFile>
+std::span<T> read_dataset(H5GroupOrFile& f, const std::string& label, Allocator&& alloc) {
   H5::DataSet dataset = f.openDataSet(label.c_str());
 
   H5::DataSpace space = dataset.getSpace();
@@ -148,12 +174,13 @@ std::span<T> read_dataset(H5::H5File& f, const std::string& label, Allocator&& a
   return std::span<T>(data, dims);
 }
 
-template <typename T>
-std::span<T> read_dataset(H5::H5File& f, const std::string& label) {
+template <typename T, typename H5GroupOrFile>
+std::span<T> read_dataset(H5GroupOrFile& f, const std::string& label) {
   return read_dataset<T>(f, label, std::allocator<T>{});
 }
 
-inline H5::PredType dataset_type(H5::H5File& f, const std::string& label) {
+template <typename H5GroupOrFile>
+inline H5::PredType dataset_type(H5GroupOrFile& f, const std::string& label) {
   H5::DataSet dataset = f.openDataSet(label.c_str());
   auto type = get_type(dataset);
   dataset.close();
