@@ -174,49 +174,6 @@ void invoke_visit_fn_impl_(std::vector<std::string> type_labels, Fn&& fn, Args&&
   }
 }
 
-/*
-template <typename Fn, typename... Args>
-void invoke_visit_fn_impl_(std::vector<std::string> type_labels, Fn&& fn, Args&&... args) {
-  if constexpr(sizeof...(Args) < 10) {
-    if (type_labels.size() == 1) {
-      auto type_label = type_labels.front();
-      if (type_label == "uint8") {
-        invoke_if_able(std::forward<Fn>(fn), std::uint8_t(), std::forward<Args>(args)...);
-      } else if (type_label == "uint16") {
-        invoke_if_able(std::forward<Fn>(fn), std::uint16_t(), std::forward<Args>(args)...);
-      } else if (type_label == "uint32") {
-        invoke_if_able(std::forward<Fn>(fn), std::uint32_t(), std::forward<Args>(args)...);
-      } else if (type_label == "uint64") {
-        invoke_if_able(std::forward<Fn>(fn), std::uint64_t(), std::forward<Args>(args)...);
-      } else if (type_label == "int8") {
-        invoke_if_able(std::forward<Fn>(fn), std::int8_t(), std::forward<Args>(args)...);
-      } else if (type_label == "int16") {
-        invoke_if_able(std::forward<Fn>(fn), std::int16_t(), std::forward<Args>(args)...);
-      } else if (type_label == "int32") {
-        invoke_if_able(std::forward<Fn>(fn), std::int32_t(), std::forward<Args>(args)...);
-      } else if (type_label == "int64") {
-        invoke_if_able(std::forward<Fn>(fn), std::int64_t(), std::forward<Args>(args)...);
-      } else if (type_label == "float32") {
-        invoke_if_able(std::forward<Fn>(fn), float(), std::forward<Args>(args)...);
-      } else if (type_label == "float64") {
-        invoke_if_able(std::forward<Fn>(fn), double(), std::forward<Args>(args)...);
-      } else if (type_label == "bint8") {
-        invoke_if_able(std::forward<Fn>(fn), bool(), std::forward<Args>(args)...);
-      } else {
-        assert(false);
-      }
-    } else {
-      auto label = type_labels.back();
-      type_labels.pop_back();
-      invoke_visit_fn_impl_({label},
-                            [=](auto&& v) {
-                              invoke_visit_fn_impl_(type_labels, fn, v, args...);
-                            });
-    }
-  }
-}
-*/
-
 } // end __detail
 
 template <typename Fn>

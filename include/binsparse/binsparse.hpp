@@ -60,22 +60,20 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
 
   auto binsparse_metadata = data["binsparse"];
 
-  if (binsparse_metadata["format"] == "CSR") {
-    auto nrows = binsparse_metadata["shape"][0];
-    auto ncols = binsparse_metadata["shape"][1];
-    auto nnz = binsparse_metadata["nnz"];
+  assert(binsparse_metadata["format"] == "CSR");
 
-    typename std::allocator_traits<std::remove_cvref_t<Allocator>>
-       :: template rebind_alloc<I> i_alloc(alloc);
+  auto nrows = binsparse_metadata["shape"][0];
+  auto ncols = binsparse_metadata["shape"][1];
+  auto nnz = binsparse_metadata["nnz"];
 
-    auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
-    auto colind = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
-    auto row_ptr = hdf5_tools::read_dataset<I>(f, "pointers_to_1", i_alloc);
+  typename std::allocator_traits<std::remove_cvref_t<Allocator>>
+     :: template rebind_alloc<I> i_alloc(alloc);
 
-    return csr_matrix<T, I>{values.data(), colind.data(), row_ptr.data(), nrows, ncols, nnz};
-  } else {
-    assert(false);
-  }
+  auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
+  auto colind = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
+  auto row_ptr = hdf5_tools::read_dataset<I>(f, "pointers_to_1", i_alloc);
+
+  return csr_matrix<T, I>{values.data(), colind.data(), row_ptr.data(), nrows, ncols, nnz};
 }
 
 template <typename T, typename I>
@@ -130,22 +128,20 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
 
   auto binsparse_metadata = data["binsparse"];
 
-  if (binsparse_metadata["format"] == "COO") {
-    auto nrows = binsparse_metadata["shape"][0];
-    auto ncols = binsparse_metadata["shape"][1];
-    auto nnz = binsparse_metadata["nnz"];
+  assert(binsparse_metadata["format"] == "COO");
 
-    typename std::allocator_traits<std::remove_cvref_t<Allocator>>
-       :: template rebind_alloc<I> i_alloc(alloc);
+  auto nrows = binsparse_metadata["shape"][0];
+  auto ncols = binsparse_metadata["shape"][1];
+  auto nnz = binsparse_metadata["nnz"];
 
-    auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
-    auto rows = hdf5_tools::read_dataset<I>(f, "indices_0", i_alloc);
-    auto cols = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
+  typename std::allocator_traits<std::remove_cvref_t<Allocator>>
+     :: template rebind_alloc<I> i_alloc(alloc);
 
-    return coo_matrix<T, I>{values.data(), rows.data(), cols.data(), nrows, ncols, nnz};
-  } else {
-    assert(false);
-  }
+  auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
+  auto rows = hdf5_tools::read_dataset<I>(f, "indices_0", i_alloc);
+  auto cols = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
+
+  return coo_matrix<T, I>{values.data(), rows.data(), cols.data(), nrows, ncols, nnz};
 }
 
 template <typename T, typename I>
@@ -163,11 +159,9 @@ inline auto inspect(std::string fname) {
 
   auto binsparse_metadata = data["binsparse"];
 
-  if (binsparse_metadata["version"] >= 0.1) {
-    return data;
-  } else {
-    assert(false);
-  }
+  assert(binsparse_metadata["version"] >= 0.1);
+
+  return data;
 }
 
 } // end binsparse

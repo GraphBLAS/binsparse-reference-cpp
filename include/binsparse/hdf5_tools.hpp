@@ -136,25 +136,28 @@ void write_dataset(H5GroupOrFile& f, const std::string& label, R&& r) {
 inline std::string get_attribute(H5::H5Object& f, const std::string& key) {
   auto attribute = f.openAttribute(key.c_str());
 
-  std::size_t size = attribute.getStorageSize();
+  H5::DataType type = attribute.getDataType();
 
-  auto type = attribute.getDataType();
+  auto size = type.getSize();
+
   std::string attribute_string(" ", size);
 
-  attribute.read(type, attribute_string);
+  attribute.read(type, attribute_string.data());
+
+  attribute.close();
 
   return attribute_string;
 }
 
 inline void set_attribute(H5::H5Object& f, const std::string& key, const std::string& value) {
+  H5::StrType string_type(H5::PredType::C_S1, value.size());
   hsize_t size = value.size();
   H5::DataSpace dataspace(1, &size);
 
-  f.createAttribute(key.c_str(), H5::PredType::NATIVE_CHAR, dataspace);
+  auto attribute = f.createAttribute(key.c_str(), string_type, H5S_SCALAR);
 
-  auto attribute = f.openAttribute(key.c_str());
-
-  attribute.write(H5::PredType::NATIVE_CHAR, value.data());
+  attribute.write(string_type, value.c_str());
+  attribute.close();
 }
 
 template <typename T, typename Allocator, typename H5GroupOrFile>
