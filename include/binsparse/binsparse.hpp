@@ -3,6 +3,7 @@
 #include <binsparse/containers/matrices.hpp>
 #include <nlohmann/json.hpp>
 #include <binsparse/containers/matrices.hpp>
+#include <binsparse/detail.hpp>
 #include "hdf5_tools.hpp"
 #include "type_info.hpp"
 #include <memory>
@@ -13,7 +14,59 @@
 
 namespace binsparse {
 
+inline constexpr double version = 0.1;
+
 // CSR Format
+
+template <typename T, typename I, typename Order>
+void write_dense_matrix(std::string fname,
+                        dense_matrix<T, I, Order> m,
+                        nlohmann::json user_keys = {}) {
+  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
+
+  std::span<T> values(m.values, m.m*m.n);
+
+  hdf5_tools::write_dataset(f, "values", values);
+
+  using json = nlohmann::json;
+  json j;
+  j["binsparse"]["version"] = version;
+  j["binsparse"]["format"] = __detail::get_matrix_string(m);
+  j["binsparse"]["shape"] = {m.m, m.n};
+  j["binsparse"]["nnz"] = m.m * m.n;
+  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  for (auto&& v : user_keys.items()) {
+    j[v.key()] = v.value();
+  }
+
+  hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
+
+  f.close();
+}
+
+template <typename T, typename I, typename Order, typename Allocator = std::allocator<T>>
+auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
+  H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
+
+  auto metadata = hdf5_tools::get_attribute(f, "binsparse");
+
+  using json = nlohmann::json;
+  auto data = json::parse(metadata);
+
+  std::cout << "Reading values...\n";
+  auto binsparse_metadata = data["binsparse"];
+
+  assert(binsparse_metadata["format"] == __detail::get_matrix_string(dense_matrix<T, I, Order>{}));
+
+  auto nrows = binsparse_metadata["shape"][0];
+  auto ncols = binsparse_metadata["shape"][1];
+  auto nnz = binsparse_metadata["nnz"];
+
+  auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
+
+  return dense_matrix<T, I, Order>{values.data(), nrows, ncols};
+}
 
 template <typename T, typename I>
 void write_csr_matrix(std::string fname,
@@ -32,7 +85,7 @@ void write_csr_matrix(std::string fname,
 
   using json = nlohmann::json;
   json j;
-  j["binsparse"]["version"] = 0.5;
+  j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "CSR";
   j["binsparse"]["shape"] = {m.m, m.n};
   j["binsparse"]["nnz"] = m.nnz;
@@ -53,7 +106,7 @@ template <typename T, typename I, typename Allocator>
 csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
   H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
 
-  auto metadata = hdf5_tools::read_dataset<char>(f, "metadata");
+  auto metadata = hdf5_tools::get_attribute(f, "binsparse");
 
   using json = nlohmann::json;
   auto data = json::parse(metadata);
@@ -100,7 +153,7 @@ void write_coo_matrix(std::string fname,
 
   using json = nlohmann::json;
   json j;
-  j["binsparse"]["version"] = 0.5;
+  j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "COO";
   j["binsparse"]["shape"] = {m.m, m.n};
   j["binsparse"]["nnz"] = m.nnz;
@@ -121,14 +174,14 @@ template <typename T, typename I, typename Allocator>
 coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
   H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
 
-  auto metadata = hdf5_tools::read_dataset<char>(f, "metadata");
+  auto metadata = hdf5_tools::get_attribute(f, "binsparse");
 
   using json = nlohmann::json;
   auto data = json::parse(metadata);
 
   auto binsparse_metadata = data["binsparse"];
 
-  assert(binsparse_metadata["format"] == "COO");
+  assert(binsparse_metadata["format"] == "COO" || binsparse_metadata["format"] == "COOR");
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];

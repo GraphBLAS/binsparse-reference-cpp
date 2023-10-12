@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 namespace binsparse {
 
 struct row_major {
@@ -32,7 +34,7 @@ struct coo_matrix {
   I m, n, nnz;
 };
 
-template <typename T, typename I, typename Order>
+template <typename T, typename I = std::size_t, typename Order = row_major>
 struct dense_matrix {
   T* values;
   
