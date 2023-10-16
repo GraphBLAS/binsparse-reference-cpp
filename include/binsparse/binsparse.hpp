@@ -294,5 +294,3 @@ inline auto inspect(std::string fname) {
 }
 
 } // end binsparse
-
-#include <binsparse/c_bindings/bc_read_matrix.hpp>

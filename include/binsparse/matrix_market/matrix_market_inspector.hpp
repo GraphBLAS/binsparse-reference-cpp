@@ -14,7 +14,7 @@ namespace binsparse {
 // 2 - number of values in matrix
 // 3 - type of the matrix (real / integer / complex / pattern)
 // 4 - comments
-auto mmread_metadata(std::string file_path) {
+inline auto mmread_metadata(std::string file_path) {
   std::string type;
 
   std::ifstream f;

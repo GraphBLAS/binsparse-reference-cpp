@@ -20,6 +20,7 @@ enable_testing()
 add_executable(
   binsparse-tests
   csr_test.cpp
+  coo_test.cpp
 )
 
 target_link_libraries(binsparse-tests binsparse fmt GTest::gtest_main)
