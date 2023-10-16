@@ -26,6 +26,15 @@ struct csr_matrix {
 };
 
 template <typename T, typename I>
+struct csc_matrix {
+  T* values;
+  I* rowind;
+  I* col_ptr;
+
+  I m, n, nnz;
+};
+
+template <typename T, typename I>
 struct coo_matrix {
   T* values;
   I* rowind;

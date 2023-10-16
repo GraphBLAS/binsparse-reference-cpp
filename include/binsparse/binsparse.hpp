@@ -16,7 +16,7 @@ namespace binsparse {
 
 inline constexpr double version = 0.1;
 
-// CSR Format
+// Dense Format
 
 template <typename T, typename I, typename Order>
 void write_dense_matrix(std::string fname,
@@ -31,7 +31,7 @@ void write_dense_matrix(std::string fname,
   using json = nlohmann::json;
   json j;
   j["binsparse"]["version"] = version;
-  j["binsparse"]["format"] = __detail::get_matrix_string(m);
+  j["binsparse"]["format"] = __detail::get_matrix_format_string(m);
   j["binsparse"]["shape"] = {m.m, m.n};
   j["binsparse"]["nnz"] = m.m * m.n;
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
@@ -57,7 +57,9 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
   std::cout << "Reading values...\n";
   auto binsparse_metadata = data["binsparse"];
 
-  assert(binsparse_metadata["format"] == __detail::get_matrix_string(dense_matrix<T, I, Order>{}));
+  auto format = __detail::unalias_format(binsparse_metadata["format"]);
+
+  assert(format == __detail::get_matrix_format_string(dense_matrix<T, I, Order>{}));
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
@@ -67,6 +69,8 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
 
   return dense_matrix<T, I, Order>{values.data(), nrows, ncols};
 }
+
+// CSR Format
 
 template <typename T, typename I>
 void write_csr_matrix(std::string fname,
@@ -129,9 +133,78 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
   return csr_matrix<T, I>{values.data(), colind.data(), row_ptr.data(), nrows, ncols, nnz};
 }
 
+
 template <typename T, typename I>
 csr_matrix<T, I> read_csr_matrix(std::string fname) {
   return read_csr_matrix<T, I>(fname, std::allocator<T>{});
+}
+
+// CSC Format
+
+template <typename T, typename I>
+void write_csc_matrix(std::string fname,
+                      csc_matrix<T, I> m,
+                      nlohmann::json user_keys = {}) {
+
+  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
+
+  std::span<T> values(m.values, m.nnz);
+  std::span<I> rowind(m.rowind, m.nnz);
+  std::span<I> col_ptr(m.col_ptr, m.m+1);
+
+  hdf5_tools::write_dataset(f, "values", values);
+  hdf5_tools::write_dataset(f, "indices_1", rowind);
+  hdf5_tools::write_dataset(f, "pointers_to_1", col_ptr);
+
+  using json = nlohmann::json;
+  json j;
+  j["binsparse"]["version"] = version;
+  j["binsparse"]["format"] = "CSR";
+  j["binsparse"]["shape"] = {m.m, m.n};
+  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
+  j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
+  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  for (auto&& v : user_keys.items()) {
+    j[v.key()] = v.value();
+  }
+
+  hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
+
+  f.close();
+}
+
+template <typename T, typename I, typename Allocator>
+csc_matrix<T, I> read_csc_matrix(std::string fname, Allocator&& alloc) {
+  H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
+
+  auto metadata = hdf5_tools::get_attribute(f, "binsparse");
+
+  using json = nlohmann::json;
+  auto data = json::parse(metadata);
+
+  auto binsparse_metadata = data["binsparse"];
+
+  assert(binsparse_metadata["format"] == "CSC");
+
+  auto nrows = binsparse_metadata["shape"][0];
+  auto ncols = binsparse_metadata["shape"][1];
+  auto nnz = binsparse_metadata["nnz"];
+
+  typename std::allocator_traits<std::remove_cvref_t<Allocator>>
+     :: template rebind_alloc<I> i_alloc(alloc);
+
+  auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
+  auto rowind = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
+  auto col_ptr = hdf5_tools::read_dataset<I>(f, "pointers_to_1", i_alloc);
+
+  return csc_matrix<T, I>{values.data(), rowind.data(), col_ptr.data(), nrows, ncols, nnz};
+}
+
+template <typename T, typename I>
+csc_matrix<T, I> read_csc_matrix(std::string fname) {
+  return read_csc_matrix<T, I>(fname, std::allocator<T>{});
 }
 
 // COO Format
@@ -181,7 +254,9 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
 
   auto binsparse_metadata = data["binsparse"];
 
-  assert(binsparse_metadata["format"] == "COO" || binsparse_metadata["format"] == "COOR");
+  auto format = __detail::unalias_format(binsparse_metadata["format"]);
+
+  assert(format == "COOR" || format == "COOC");
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
@@ -201,6 +276,7 @@ template <typename T, typename I>
 coo_matrix<T, I> read_coo_matrix(std::string fname) {
   return read_coo_matrix<T, I>(fname, std::allocator<T>{});
 }
+
 
 inline auto inspect(std::string fname) {
   H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
