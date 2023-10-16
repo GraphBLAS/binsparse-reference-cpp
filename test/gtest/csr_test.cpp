@@ -15,10 +15,13 @@ TEST(BinsparseReadWrite, CSRFormat) {
   std::string binsparse_file = "out.bsp.hdf5";
 
   for (auto&& file_path : file_paths) {
-    auto x = binsparse::__detail::mmread<T, I, binsparse::__detail::csr_matrix_owning<T, I>>(file_path);
+    auto x = binsparse::__detail::mmread<
+        T, I, binsparse::__detail::csr_matrix_owning<T, I>>(file_path);
 
     auto&& [num_rows, num_columns] = x.shape();
-    binsparse::csr_matrix<T, I> matrix{x.values().data(), x.colind().data(), x.rowptr().data(), num_rows, num_columns, I(x.size())};
+    binsparse::csr_matrix<T, I> matrix{x.values().data(), x.colind().data(),
+                                       x.rowptr().data(), num_rows,
+                                       num_columns,       I(x.size())};
     binsparse::write_csr_matrix(binsparse_file, matrix);
 
     auto matrix_ = binsparse::read_csr_matrix<T, I>(binsparse_file);
@@ -35,7 +38,7 @@ TEST(BinsparseReadWrite, CSRFormat) {
       EXPECT_EQ(matrix.colind[i], matrix_.colind[i]);
     }
 
-    for (I i = 0; i < matrix.m+1; i++) {
+    for (I i = 0; i < matrix.m + 1; i++) {
       EXPECT_EQ(matrix.row_ptr[i], matrix_.row_ptr[i]);
     }
 

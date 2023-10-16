@@ -1,17 +1,15 @@
 #pragma once
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <ranges>
 
 namespace binsparse {
 
 namespace __detail {
 
-template <typename T, typename I>
-class csr_matrix_owning {
+template <typename T, typename I> class csr_matrix_owning {
 public:
-
   csr_matrix_owning(std::tuple<I, I> shape) : shape_(shape) {}
 
   auto values() { return std::ranges::views::all(values_); }
@@ -22,15 +20,14 @@ public:
   auto rowptr() const { return std::ranges::views::all(rowptr_); }
   auto colind() const { return std::ranges::views::all(colind_); }
 
-  template <typename Iter>
-  void assign_tuples(Iter first, Iter last) {
+  template <typename Iter> void assign_tuples(Iter first, Iter last) {
     std::size_t nnz = std::ranges::distance(first, last);
     values_.resize(nnz);
     colind_.resize(nnz);
-    rowptr_.resize(std::get<0>(shape())+1);
+    rowptr_.resize(std::get<0>(shape()) + 1);
 
     rowptr_[0] = 0;
-    
+
     std::size_t r = 0;
     std::size_t c = 0;
     for (auto iter = first; iter != last; ++iter) {
@@ -41,11 +38,11 @@ public:
       colind_[c] = j;
 
       while (r < i) {
-        if (r+1 > std::get<0>(shape())) {
+        if (r + 1 > std::get<0>(shape())) {
           // TODO: exception?
           // throw std::runtime_error("csr_matrix_impl_: given invalid matrix");
         }
-        rowptr_[r+1] = c;
+        rowptr_[r + 1] = c;
         r++;
       }
       c++;
@@ -56,18 +53,14 @@ public:
       }
     }
 
-    for ( ; r < std::get<0>(shape()); r++) {
-      rowptr_[r+1] = nnz;
+    for (; r < std::get<0>(shape()); r++) {
+      rowptr_[r + 1] = nnz;
     }
   }
 
-  auto shape() const {
-    return shape_;
-  }
+  auto shape() const { return shape_; }
 
-  auto size() const {
-    return values_.size();
-  }
+  auto size() const { return values_.size(); }
 
 private:
   std::tuple<I, I> shape_;
@@ -76,10 +69,8 @@ private:
   std::vector<I> colind_;
 };
 
-template <typename T, typename I>
-class coo_matrix_owning {
+template <typename T, typename I> class coo_matrix_owning {
 public:
-
   coo_matrix_owning(std::tuple<I, I> shape) : shape_(shape) {}
 
   auto values() { return std::ranges::views::all(values_); }
@@ -98,8 +89,7 @@ public:
     colind_.push_back(j);
   }
 
-  template <typename Iter>
-  void assign_tuples(Iter first, Iter last) {
+  template <typename Iter> void assign_tuples(Iter first, Iter last) {
     std::size_t nnz = std::ranges::distance(first, last);
     for (auto iter = first; iter != last; ++iter) {
       auto&& [idx, v] = *iter;
@@ -114,13 +104,9 @@ public:
     colind_.reserve(size);
   }
 
-  auto shape() const {
-    return shape_;
-  }
+  auto shape() const { return shape_; }
 
-  auto size() const {
-    return values_.size();
-  }
+  auto size() const { return values_.size(); }
 
 private:
   std::tuple<I, I> shape_;
@@ -156,15 +142,18 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
   std::string item;
   ss >> item;
   if (item != "%%MatrixMarket") {
-    throw std::runtime_error(file_path + " could not be parsed as a Matrix Market file.");
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
   }
   ss >> item;
   if (item != "matrix") {
-    throw std::runtime_error(file_path + " could not be parsed as a Matrix Market file.");
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
   }
   ss >> item;
   if (item != "coordinate") {
-    throw std::runtime_error(file_path + " could not be parsed as a Matrix Market file.");
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
   }
   bool pattern;
   ss >> item;
@@ -207,7 +196,7 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
   using coo_type = std::vector<std::tuple<std::tuple<I, I>, T>>;
   coo_type matrix;
   if (symmetric) {
-    matrix.reserve(2*nnz);
+    matrix.reserve(2 * nnz);
   } else {
     matrix.reserve(nnz);
   }
@@ -229,7 +218,8 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
     }
 
     if (i >= m || j >= n) {
-      throw std::runtime_error("read_MatrixMarket: file has nonzero out of bounds.");
+      throw std::runtime_error(
+          "read_MatrixMarket: file has nonzero out of bounds.");
     }
 
     matrix.push_back({{i, j}, v});
@@ -240,23 +230,24 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
 
     c++;
     if (c > nnz) {
-      throw std::runtime_error("read_MatrixMarket: error reading Matrix Market file, file has more nonzeros than reported.");
+      throw std::runtime_error("read_MatrixMarket: error reading Matrix Market "
+                               "file, file has more nonzeros than reported.");
     }
   }
 
   auto sort_fn = [](auto&& a, auto&& b) {
-                   auto&& [a_idx, a_v] = a;
-                   auto&& [b_idx, b_v] = b;
+    auto&& [a_idx, a_v] = a;
+    auto&& [b_idx, b_v] = b;
 
-                   auto&& [a_i, a_j] = a_idx;
-                   auto&& [b_i, b_j] = b_idx;
+    auto&& [a_i, a_j] = a_idx;
+    auto&& [b_i, b_j] = b_idx;
 
-                   if (a_i != b_i) {
-                    return a_i < b_i;
-                   } else {
-                    return a_j < b_j;
-                   }
-                 };
+    if (a_i != b_i) {
+      return a_i < b_i;
+    } else {
+      return a_j < b_j;
+    }
+  };
 
   std::sort(matrix.begin(), matrix.end(), sort_fn);
 
@@ -267,6 +258,6 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
   return m_out;
 }
 
-} // end __detail
+} // namespace __detail
 
-} // end binsparse
+} // namespace binsparse

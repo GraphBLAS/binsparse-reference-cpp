@@ -1,7 +1,7 @@
 #include <binsparse/binsparse.hpp>
-#include <iostream>
-#include <concepts>
 #include <complex>
+#include <concepts>
+#include <iostream>
 #include <ranges>
 
 class Foo {};
@@ -21,7 +21,8 @@ int main(int argc, char** argv) {
 
   std::cout << "Inspecting Binsparse v" << metadata["version"] << " file...\n";
   std::cout << metadata["format"] << " format matrix of dimension "
-            << metadata["shape"] << " with " << metadata["nnz"] << " nonzeros\n";
+            << metadata["shape"] << " with " << metadata["nnz"]
+            << " nonzeros\n";
 
   if (metadata["format"] == "COO") {
     auto i0 = metadata["data_types"]["indices_0"];
@@ -40,7 +41,6 @@ int main(int argc, char** argv) {
     assert(false);
   }
 
-  
   nlohmann::json user;
   std::cout << "User-provided keys:\n";
   std::size_t n_keys = 0;

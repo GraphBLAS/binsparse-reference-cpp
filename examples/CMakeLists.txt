@@ -6,4 +6,3 @@ endfunction()
 add_example(test)
 add_example(convert_binsparse)
 add_example(inspect_binsparse)
-

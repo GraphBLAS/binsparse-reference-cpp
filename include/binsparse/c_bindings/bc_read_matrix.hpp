@@ -1,8 +1,8 @@
 #pragma once
 
-#include <binsparse/c_bindings/binsparse_matrix.h>
-#include <binsparse/c_bindings/allocator_wrapper.hpp>
 #include <binsparse/binsparse.hpp>
+#include <binsparse/c_bindings/allocator_wrapper.hpp>
+#include <binsparse/c_bindings/binsparse_matrix.h>
 #include <cstdio>
 
 extern "C" {
@@ -36,7 +36,7 @@ bc_matrix_struct bc_read_matrix(const char* fname) {
       matrix_struct.iso_valued = false;
       matrix_struct.type_size = sizeof(T);
       matrix_struct.values = matrix.values;
-      matrix_struct.values_size = matrix.nnz*sizeof(T);
+      matrix_struct.values_size = matrix.nnz * sizeof(T);
       matrix_struct.nvals = matrix.nnz;
 
       matrix_struct.axis = new bc_axis_struct[2];
@@ -46,14 +46,14 @@ bc_matrix_struct bc_read_matrix(const char* fname) {
       matrix_struct.axis[0].in_order = true;
       matrix_struct.axis[0].index = matrix.rowind;
       matrix_struct.axis[0].nindex = matrix.nnz;
-      matrix_struct.axis[0].index_size = matrix.nnz*sizeof(I);
+      matrix_struct.axis[0].index_size = matrix.nnz * sizeof(I);
 
       matrix_struct.axis[1].order = 0;
       matrix_struct.axis[1].dimension = matrix.n;
       matrix_struct.axis[1].in_order = true;
       matrix_struct.axis[1].index = matrix.colind;
       matrix_struct.axis[1].nindex = matrix.nnz;
-      matrix_struct.axis[1].index_size = matrix.nnz*sizeof(I);
+      matrix_struct.axis[1].index_size = matrix.nnz * sizeof(I);
 
       return matrix_struct;
     }
@@ -63,5 +63,4 @@ bc_matrix_struct bc_read_matrix(const char* fname) {
   }
   assert(false);
 }
-
 }

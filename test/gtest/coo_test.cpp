@@ -15,10 +15,13 @@ TEST(BinsparseReadWrite, COOFormat) {
   std::string binsparse_file = "out.bsp.hdf5";
 
   for (auto&& file_path : file_paths) {
-    auto x = binsparse::__detail::mmread<T, I, binsparse::__detail::coo_matrix_owning<T, I>>(file_path);
+    auto x = binsparse::__detail::mmread<
+        T, I, binsparse::__detail::coo_matrix_owning<T, I>>(file_path);
 
     auto&& [num_rows, num_columns] = x.shape();
-    binsparse::coo_matrix<T, I> matrix{x.values().data(), x.rowind().data(), x.colind().data(), num_rows, num_columns, I(x.size())};
+    binsparse::coo_matrix<T, I> matrix{x.values().data(), x.rowind().data(),
+                                       x.colind().data(), num_rows,
+                                       num_columns,       I(x.size())};
     binsparse::write_coo_matrix(binsparse_file, matrix);
 
     auto matrix_ = binsparse::read_coo_matrix<T, I>(binsparse_file);

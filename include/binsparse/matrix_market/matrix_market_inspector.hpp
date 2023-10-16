@@ -1,7 +1,7 @@
 #pragma once
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -37,13 +37,15 @@ inline auto mmread_metadata(std::string file_path) {
   // Check file is Matrix Market format.
   ss >> item;
   if (item != "%%MatrixMarket") {
-    throw std::runtime_error(file_path + " could not be parsed as a Matrix Market file.");
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
   }
 
   // Read in "matrix"
   ss >> item;
   if (item != "matrix") {
-    throw std::runtime_error(file_path + " could not be parsed as a Matrix Market file.");
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
   }
 
   // Read in coordinate / array
@@ -78,4 +80,4 @@ inline auto mmread_metadata(std::string file_path) {
   return std::tuple(m, n, nnz, type, comment);
 }
 
-} // end binsparse
+} // namespace binsparse
