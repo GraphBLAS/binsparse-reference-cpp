@@ -11,7 +11,7 @@ CXX ?= clang++
 BINSPARSE_DIR ?= ../include
 
 # HDF5 library location
-HDF5_DIR ?= /opt/homebrew/Cellar/hdf5/1.14.2
+HDF5_DIR ?= /opt/homebrew/Cellar/hdf5/1.14.3
 HDF5_CXXFLAGS ?= -I$(HDF5_DIR)/include
 HDF5_LIBRARY_FLAGS ?= -L$(HDF5_DIR)/lib -lhdf5_hl_cpp -lhdf5_cpp -lhdf5_hl -lhdf5
 

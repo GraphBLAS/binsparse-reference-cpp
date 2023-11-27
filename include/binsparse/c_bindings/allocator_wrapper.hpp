@@ -2,7 +2,8 @@
 
 namespace binsparse {
 
-template <typename T> class allocator_wrapper {
+template <typename T>
+class allocator_wrapper {
 public:
   using value_type = T;
   using pointer = T*;
@@ -29,12 +30,15 @@ public:
     return reinterpret_cast<T*>(malloc_fn_(size * sizeof(T)));
   }
 
-  void deallocate(pointer ptr, std::size_t n) { free_fn_(ptr); }
+  void deallocate(pointer ptr, std::size_t n) {
+    free_fn_(ptr);
+  }
 
   bool operator==(const allocator_wrapper&) const = default;
   bool operator!=(const allocator_wrapper&) const = default;
 
-  template <typename U> struct rebind {
+  template <typename U>
+  struct rebind {
     using other = allocator_wrapper<U>;
   };
 

@@ -9,7 +9,8 @@
 
 namespace hdf5_tools {
 
-template <typename U> inline H5::PredType get_hdf5_native_type() {
+template <typename U>
+inline H5::PredType get_hdf5_native_type() {
   using T = std::decay_t<U>;
   if constexpr (std::is_same_v<T, char>) {
     return H5::PredType::NATIVE_CHAR;
@@ -42,7 +43,8 @@ template <typename U> inline H5::PredType get_hdf5_native_type() {
   }
 }
 
-template <typename U> inline H5::PredType get_hdf5_standard_type() {
+template <typename U>
+inline H5::PredType get_hdf5_standard_type() {
   using T = std::decay_t<U>;
   if constexpr (std::is_same_v<T, char>) {
     return H5::PredType::STD_I8LE;

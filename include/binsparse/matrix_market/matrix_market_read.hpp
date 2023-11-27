@@ -8,19 +8,33 @@ namespace binsparse {
 
 namespace __detail {
 
-template <typename T, typename I> class csr_matrix_owning {
+template <typename T, typename I>
+class csr_matrix_owning {
 public:
   csr_matrix_owning(std::tuple<I, I> shape) : shape_(shape) {}
 
-  auto values() { return std::ranges::views::all(values_); }
-  auto rowptr() { return std::ranges::views::all(rowptr_); }
-  auto colind() { return std::ranges::views::all(colind_); }
+  auto values() {
+    return std::ranges::views::all(values_);
+  }
+  auto rowptr() {
+    return std::ranges::views::all(rowptr_);
+  }
+  auto colind() {
+    return std::ranges::views::all(colind_);
+  }
 
-  auto values() const { return std::ranges::views::all(values_); }
-  auto rowptr() const { return std::ranges::views::all(rowptr_); }
-  auto colind() const { return std::ranges::views::all(colind_); }
+  auto values() const {
+    return std::ranges::views::all(values_);
+  }
+  auto rowptr() const {
+    return std::ranges::views::all(rowptr_);
+  }
+  auto colind() const {
+    return std::ranges::views::all(colind_);
+  }
 
-  template <typename Iter> void assign_tuples(Iter first, Iter last) {
+  template <typename Iter>
+  void assign_tuples(Iter first, Iter last) {
     std::size_t nnz = std::ranges::distance(first, last);
     values_.resize(nnz);
     colind_.resize(nnz);
@@ -58,9 +72,13 @@ public:
     }
   }
 
-  auto shape() const { return shape_; }
+  auto shape() const {
+    return shape_;
+  }
 
-  auto size() const { return values_.size(); }
+  auto size() const {
+    return values_.size();
+  }
 
 private:
   std::tuple<I, I> shape_;
@@ -69,17 +87,30 @@ private:
   std::vector<I> colind_;
 };
 
-template <typename T, typename I> class coo_matrix_owning {
+template <typename T, typename I>
+class coo_matrix_owning {
 public:
   coo_matrix_owning(std::tuple<I, I> shape) : shape_(shape) {}
 
-  auto values() { return std::ranges::views::all(values_); }
-  auto rowind() { return std::ranges::views::all(rowind_); }
-  auto colind() { return std::ranges::views::all(colind_); }
+  auto values() {
+    return std::ranges::views::all(values_);
+  }
+  auto rowind() {
+    return std::ranges::views::all(rowind_);
+  }
+  auto colind() {
+    return std::ranges::views::all(colind_);
+  }
 
-  auto values() const { return std::ranges::views::all(values_); }
-  auto rowind() const { return std::ranges::views::all(rowind_); }
-  auto colind() const { return std::ranges::views::all(colind_); }
+  auto values() const {
+    return std::ranges::views::all(values_);
+  }
+  auto rowind() const {
+    return std::ranges::views::all(rowind_);
+  }
+  auto colind() const {
+    return std::ranges::views::all(colind_);
+  }
 
   void push_back(std::tuple<std::tuple<I, I>, T> entry) {
     auto&& [idx, v] = entry;
@@ -89,7 +120,8 @@ public:
     colind_.push_back(j);
   }
 
-  template <typename Iter> void assign_tuples(Iter first, Iter last) {
+  template <typename Iter>
+  void assign_tuples(Iter first, Iter last) {
     std::size_t nnz = std::ranges::distance(first, last);
     for (auto iter = first; iter != last; ++iter) {
       auto&& [idx, v] = *iter;
@@ -104,9 +136,13 @@ public:
     colind_.reserve(size);
   }
 
-  auto shape() const { return shape_; }
+  auto shape() const {
+    return shape_;
+  }
 
-  auto size() const { return values_.size(); }
+  auto size() const {
+    return values_.size();
+  }
 
 private:
   std::tuple<I, I> shape_;
