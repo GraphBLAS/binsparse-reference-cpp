@@ -13,9 +13,10 @@ namespace binsparse {
 // 1 - number of columns in matrix
 // 2 - number of values in matrix
 // 3 - type of the matrix (real / integer / complex / pattern)
-// 4 - comments
+// 4 - structure of the matrix (general / symmetric / skew-symmetric /
+// Hermitian) 5 - comments
 inline auto mmread_metadata(std::string file_path) {
-  std::string type;
+  std::string type, structure;
 
   std::ifstream f;
 
@@ -57,6 +58,7 @@ inline auto mmread_metadata(std::string file_path) {
 
   // Read in general / symmetric / skew-symmetric / Hermitian
   ss >> item;
+  structure = item;
 
   std::string comment;
 
@@ -77,7 +79,7 @@ inline auto mmread_metadata(std::string file_path) {
   ss.str(buf);
   ss >> m >> n >> nnz;
 
-  return std::tuple(m, n, nnz, type, comment);
+  return std::tuple(m, n, nnz, type, structure, comment);
 }
 
 } // namespace binsparse

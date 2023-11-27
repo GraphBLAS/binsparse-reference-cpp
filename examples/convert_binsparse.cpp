@@ -70,11 +70,13 @@ int main(int argc, char** argv) {
     format = "COO";
   }
 
-  auto [m, n, nnz, type, comment] = binsparse::mmread_metadata(input_file);
+  auto [m, n, nnz, type, structure, comment] =
+      binsparse::mmread_metadata(input_file);
 
   std::cout << "Matrix is " << m << " x " << n << " with " << nnz
             << " values.\n";
   std::cout << "Type: " << type << std::endl;
+  std::cout << "Structure: " << structure << std::endl;
   std::cout << "Comment:\n";
   std::cout << comment;
 

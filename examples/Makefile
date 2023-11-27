@@ -4,7 +4,7 @@
 # your system and export them to your environment or
 # define them here.
 
-CXX ?= clang++
+CXX ?= g++-13
 
 # Binsparse (this should be fine unless you do an
 # out-of-source build)
