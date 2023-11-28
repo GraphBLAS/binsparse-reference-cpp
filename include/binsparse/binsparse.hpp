@@ -34,6 +34,11 @@ void write_dense_matrix(std::string fname, dense_matrix<T, I, Order> m,
   j["binsparse"]["nnz"] = m.m * m.n;
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
 
+  if (m.structure != general) {
+    j["binsparse"]["structure"] =
+        __detail::get_structure_name(m.structure).value();
+  }
+
   for (auto&& v : user_keys.items()) {
     j[v.key()] = v.value();
   }
@@ -67,7 +72,13 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
 
   auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
 
-  return dense_matrix<T, I, Order>{values.data(), nrows, ncols};
+  structure_t structure = general;
+
+  if (binsparse_metadata.contains("structure")) {
+    structure = __detail::parse_structure(binsparse_metadata["structure"]);
+  }
+
+  return dense_matrix<T, I, Order>{values.data(), nrows, ncols, structure};
 }
 
 // CSR Format
@@ -95,6 +106,11 @@ void write_csr_matrix(std::string fname, csr_matrix<T, I> m,
   j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  if (m.structure != general) {
+    j["binsparse"]["structure"] =
+        __detail::get_structure_name(m.structure).value();
+  }
 
   for (auto&& v : user_keys.items()) {
     j[v.key()] = v.value();
@@ -130,8 +146,14 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
   auto colind = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
   auto row_ptr = hdf5_tools::read_dataset<I>(f, "pointers_to_1", i_alloc);
 
-  return csr_matrix<T, I>{values.data(), colind.data(), row_ptr.data(),
-                          nrows,         ncols,         nnz};
+  structure_t structure = general;
+
+  if (binsparse_metadata.contains("structure")) {
+    structure = __detail::parse_structure(binsparse_metadata["structure"]);
+  }
+
+  return csr_matrix<T, I>{values.data(), colind.data(), row_ptr.data(), nrows,
+                          ncols,         nnz,           structure};
 }
 
 template <typename T, typename I>
@@ -164,6 +186,11 @@ void write_csc_matrix(std::string fname, csc_matrix<T, I> m,
   j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  if (m.structure != general) {
+    j["binsparse"]["structure"] =
+        __detail::get_structure_name(m.structure).value();
+  }
 
   for (auto&& v : user_keys.items()) {
     j[v.key()] = v.value();
@@ -199,8 +226,14 @@ csc_matrix<T, I> read_csc_matrix(std::string fname, Allocator&& alloc) {
   auto rowind = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
   auto col_ptr = hdf5_tools::read_dataset<I>(f, "pointers_to_1", i_alloc);
 
-  return csc_matrix<T, I>{values.data(), rowind.data(), col_ptr.data(),
-                          nrows,         ncols,         nnz};
+  structure_t structure = general;
+
+  if (binsparse_metadata.contains("structure")) {
+    structure = __detail::parse_structure(binsparse_metadata["structure"]);
+  }
+
+  return csc_matrix<T, I>{values.data(), rowind.data(), col_ptr.data(), nrows,
+                          ncols,         nnz,           structure};
 }
 
 template <typename T, typename I>
@@ -233,6 +266,11 @@ void write_coo_matrix(std::string fname, coo_matrix<T, I> m,
   j["binsparse"]["data_types"]["indices_0"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  if (m.structure != general) {
+    j["binsparse"]["structure"] =
+        __detail::get_structure_name(m.structure).value();
+  }
 
   for (auto&& v : user_keys.items()) {
     j[v.key()] = v.value();
@@ -270,8 +308,14 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
   auto rows = hdf5_tools::read_dataset<I>(f, "indices_0", i_alloc);
   auto cols = hdf5_tools::read_dataset<I>(f, "indices_1", i_alloc);
 
-  return coo_matrix<T, I>{values.data(), rows.data(), cols.data(),
-                          nrows,         ncols,       nnz};
+  structure_t structure = general;
+
+  if (binsparse_metadata.contains("structure")) {
+    structure = __detail::parse_structure(binsparse_metadata["structure"]);
+  }
+
+  return coo_matrix<T, I>{values.data(), rows.data(), cols.data(), nrows,
+                          ncols,         nnz,         structure};
 }
 
 template <typename T, typename I>

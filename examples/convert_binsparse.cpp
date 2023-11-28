@@ -14,7 +14,8 @@ void convert_to_binsparse(std::string input_file, std::string output_file,
         T, I, binsparse::__detail::csr_matrix_owning<T, I>>(input_file);
     binsparse::csr_matrix<T, I> matrix{
         x.values().data(),      x.colind().data(),      x.rowptr().data(),
-        std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size())};
+        std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size()),
+        x.structure()};
     binsparse::write_csr_matrix(output_file, matrix, user_keys);
     std::cout << "Writing to binsparse file " << output_file << " using "
               << format << " format...\n";
@@ -23,7 +24,8 @@ void convert_to_binsparse(std::string input_file, std::string output_file,
         T, I, binsparse::__detail::coo_matrix_owning<T, I>>(input_file);
     binsparse::coo_matrix<T, I> matrix{
         x.values().data(),      x.rowind().data(),      x.colind().data(),
-        std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size())};
+        std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size()),
+        x.structure()};
     binsparse::write_coo_matrix(output_file, matrix, user_keys);
     std::cout << "Writing to binsparse file " << output_file << " using "
               << format << " format...\n";

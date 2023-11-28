@@ -11,7 +11,8 @@ namespace __detail {
 template <typename T, typename I>
 class csr_matrix_owning {
 public:
-  csr_matrix_owning(std::tuple<I, I> shape) : shape_(shape) {}
+  csr_matrix_owning(std::tuple<I, I> shape, structure_t structure = general)
+      : shape_(shape), structure_(structure) {}
 
   auto values() {
     return std::ranges::views::all(values_);
@@ -80,17 +81,23 @@ public:
     return values_.size();
   }
 
+  auto structure() const {
+    return structure_;
+  }
+
 private:
   std::tuple<I, I> shape_;
   std::vector<T> values_;
   std::vector<I> rowptr_;
   std::vector<I> colind_;
+  structure_t structure_;
 };
 
 template <typename T, typename I>
 class coo_matrix_owning {
 public:
-  coo_matrix_owning(std::tuple<I, I> shape) : shape_(shape) {}
+  coo_matrix_owning(std::tuple<I, I> shape, structure_t structure = general)
+      : shape_(shape), structure_(structure) {}
 
   auto values() {
     return std::ranges::views::all(values_);
@@ -144,11 +151,16 @@ public:
     return values_.size();
   }
 
+  auto structure() const {
+    return structure_;
+  }
+
 private:
   std::tuple<I, I> shape_;
   std::vector<T> values_;
   std::vector<I> rowind_;
   std::vector<I> colind_;
+  structure_t structure_;
 };
 
 /// Read in the Matrix Market file at location `file_path` and
@@ -170,9 +182,8 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
   std::string buf;
 
   // Make sure the file is matrix market matrix, coordinate, and check whether
-  // it is symmetric. If the matrix is symmetric, non-diagonal elements will
-  // be inserted in both (i, j) and (j, i).  Error out if skew-symmetric or
-  // Hermitian.
+  // it is symmetric. If the matrix is symmetric.
+  // Error out if skew-symmetric or Hermitian.
   std::getline(f, buf);
   std::istringstream ss(buf);
   std::string item;
@@ -200,11 +211,11 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
   }
   // TODO: do something with real vs. integer vs. pattern?
   ss >> item;
-  bool symmetric;
+  structure_t structure;
   if (item == "general") {
-    symmetric = false;
+    structure = general;
   } else if (item == "symmetric") {
-    symmetric = true;
+    structure = symmetric;
   } else {
     throw std::runtime_error(file_path + " has an unsupported matrix type");
   }
@@ -224,18 +235,11 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
   ss.str(buf);
   ss >> m >> n >> nnz;
 
-  // NOTE for symmetric matrices: `nnz` holds the number of stored values in
-  // the matrix market file, while `matrix.nnz_` will hold the total number of
-  // stored values (including "mirrored" symmetric values).
-  MatrixType m_out({m, n});
+  MatrixType m_out({m, n}, structure);
 
   using coo_type = std::vector<std::tuple<std::tuple<I, I>, T>>;
   coo_type matrix;
-  if (symmetric) {
-    matrix.reserve(2 * nnz);
-  } else {
-    matrix.reserve(nnz);
-  }
+  matrix.reserve(nnz);
 
   size_type c = 0;
   while (std::getline(f, buf)) {
@@ -259,10 +263,6 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
     }
 
     matrix.push_back({{i, j}, v});
-
-    if (symmetric && i != j) {
-      matrix.push_back({{j, i}, v});
-    }
 
     c++;
     if (c > nnz) {

@@ -27,6 +27,32 @@ inline std::string unalias_format(const std::string& format) {
   }
 }
 
+inline std::optional<std::string> get_structure_name(structure_t structure) {
+  if (structure == general) {
+    return {};
+  } else if (structure == symmetric) {
+    return "symmetric_lower";
+  } else if (structure == skew_symmetric) {
+    return "skew_symmetric_lower";
+  } else if (structure == hermitian) {
+    return "hermitian";
+  } else {
+    throw std::runtime_error("get_structure_name: unknown structure");
+  }
+}
+
+inline structure_t parse_structure(const std::string& structure) {
+  if (structure == "symmetric_lower") {
+    return symmetric;
+  } else if (structure == "skew_symmetric_lower") {
+    return skew_symmetric;
+  } else if (structure == "hermitian") {
+    return hermitian;
+  } else {
+    throw std::runtime_error("parse_structure: unsupported structure");
+  }
+}
+
 } // namespace __detail
 
 } // namespace binsparse
