@@ -18,10 +18,8 @@ inline constexpr double version = 0.1;
 // Dense Format
 
 template <typename T, typename I, typename Order>
-void write_dense_matrix(std::string fname, dense_matrix<T, I, Order> m,
+void write_dense_matrix(H5::Group& f, dense_matrix<T, I, Order> m,
                         nlohmann::json user_keys = {}) {
-  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
-
   std::span<T> values(m.values, m.m * m.n);
 
   hdf5_tools::write_dataset(f, "values", values);
@@ -44,7 +42,13 @@ void write_dense_matrix(std::string fname, dense_matrix<T, I, Order> m,
   }
 
   hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
+}
 
+template <typename T, typename I, typename Order>
+void write_dense_matrix(std::string fname, dense_matrix<T, I, Order> m,
+                        nlohmann::json user_keys = {}) {
+  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
+  write_dense_matrix(f, m, user_keys);
   f.close();
 }
 
@@ -84,11 +88,8 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
 // CSR Format
 
 template <typename T, typename I>
-void write_csr_matrix(std::string fname, csr_matrix<T, I> m,
+void write_csr_matrix(H5::Group& f, csr_matrix<T, I> m,
                       nlohmann::json user_keys = {}) {
-
-  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
-
   std::span<T> values(m.values, m.nnz);
   std::span<I> colind(m.colind, m.nnz);
   std::span<I> row_ptr(m.row_ptr, m.m + 1);
@@ -117,7 +118,13 @@ void write_csr_matrix(std::string fname, csr_matrix<T, I> m,
   }
 
   hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
+}
 
+template <typename T, typename I>
+void write_csr_matrix(std::string fname, csr_matrix<T, I> m,
+                      nlohmann::json user_keys = {}) {
+  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
+  write_csr_matrix(f, m, user_keys);
   f.close();
 }
 
@@ -164,11 +171,8 @@ csr_matrix<T, I> read_csr_matrix(std::string fname) {
 // CSC Format
 
 template <typename T, typename I>
-void write_csc_matrix(std::string fname, csc_matrix<T, I> m,
+void write_csc_matrix(H5::Group& f, csc_matrix<T, I> m,
                       nlohmann::json user_keys = {}) {
-
-  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
-
   std::span<T> values(m.values, m.nnz);
   std::span<I> rowind(m.rowind, m.nnz);
   std::span<I> col_ptr(m.col_ptr, m.m + 1);
@@ -197,7 +201,13 @@ void write_csc_matrix(std::string fname, csc_matrix<T, I> m,
   }
 
   hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
+}
 
+template <typename T, typename I>
+void write_csc_matrix(std::string fname, csc_matrix<T, I> m,
+                      nlohmann::json user_keys = {}) {
+  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
+  write_csc_matrix(f, m, user_keys);
   f.close();
 }
 
@@ -244,11 +254,8 @@ csc_matrix<T, I> read_csc_matrix(std::string fname) {
 // COO Format
 
 template <typename T, typename I>
-void write_coo_matrix(std::string fname, coo_matrix<T, I> m,
+void write_coo_matrix(H5::Group& f, coo_matrix<T, I> m,
                       nlohmann::json user_keys = {}) {
-
-  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
-
   std::span<T> values(m.values, m.nnz);
   std::span<I> rowind(m.rowind, m.nnz);
   std::span<I> colind(m.colind, m.nnz);
@@ -277,7 +284,13 @@ void write_coo_matrix(std::string fname, coo_matrix<T, I> m,
   }
 
   hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
+}
 
+template <typename T, typename I>
+void write_coo_matrix(std::string fname, coo_matrix<T, I> m,
+                      nlohmann::json user_keys = {}) {
+  H5::H5File f(fname.c_str(), H5F_ACC_TRUNC);
+  write_coo_matrix(f, m, user_keys);
   f.close();
 }
 
