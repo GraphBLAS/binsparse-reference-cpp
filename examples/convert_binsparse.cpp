@@ -5,18 +5,32 @@
 
 template <typename T, typename I>
 void convert_to_binsparse(std::string input_file, std::string output_file,
-                          std::string format, std::string comment) {
+                          std::string format, std::string comment,
+                          std::optional<std::string> group = {}) {
+  H5::H5File file;
+  std::unique_ptr<H5::Group> f_p;
+
+  if (!group.has_value()) {
+    f_p = std::unique_ptr<H5::Group>(
+        new H5::H5File(output_file.c_str(), H5F_ACC_TRUNC));
+  } else {
+    file = H5::H5File(output_file.c_str(), H5F_ACC_RDWR);
+    H5::Group g = file.createGroup(group.value().c_str());
+    f_p = std::unique_ptr<H5::Group>(new H5::Group(g));
+  }
+
+  H5::Group& f = *f_p;
+
   nlohmann::json user_keys;
   user_keys["comment"] = comment;
   if (format == "CSR") {
-    std::cout << "Reading in " << input_file << "...\n";
     auto x = binsparse::__detail::mmread<
         T, I, binsparse::__detail::csr_matrix_owning<T, I>>(input_file);
     binsparse::csr_matrix<T, I> matrix{
         x.values().data(),      x.colind().data(),      x.rowptr().data(),
         std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size()),
         x.structure()};
-    binsparse::write_csr_matrix(output_file, matrix, user_keys);
+    binsparse::write_csr_matrix(f, matrix, user_keys);
     std::cout << "Writing to binsparse file " << output_file << " using "
               << format << " format...\n";
   } else {
@@ -26,7 +40,7 @@ void convert_to_binsparse(std::string input_file, std::string output_file,
         x.values().data(),      x.rowind().data(),      x.colind().data(),
         std::get<0>(x.shape()), std::get<1>(x.shape()), I(x.size()),
         x.structure()};
-    binsparse::write_coo_matrix(output_file, matrix, user_keys);
+    binsparse::write_coo_matrix(f, matrix, user_keys);
     std::cout << "Writing to binsparse file " << output_file << " using "
               << format << " format...\n";
   }
@@ -35,17 +49,21 @@ void convert_to_binsparse(std::string input_file, std::string output_file,
 template <typename I>
 void convert_to_binsparse(std::string input_file, std::string output_file,
                           std::string type, std::string format,
-                          std::string comment) {
+                          std::string comment,
+                          std::optional<std::string> group = {}) {
   if (type == "real") {
-    convert_to_binsparse<float, I>(input_file, output_file, format, comment);
+    convert_to_binsparse<float, I>(input_file, output_file, format, comment,
+                                   group);
   } else if (type == "complex") {
     assert(false);
     // convert_to_binsparse<std::complex<float>, I>(input_file, output_file,
     // format, comment);
   } else if (type == "integer") {
-    convert_to_binsparse<int64_t, I>(input_file, output_file, format, comment);
+    convert_to_binsparse<int64_t, I>(input_file, output_file, format, comment,
+                                     group);
   } else if (type == "pattern") {
-    convert_to_binsparse<uint8_t, I>(input_file, output_file, format, comment);
+    convert_to_binsparse<uint8_t, I>(input_file, output_file, format, comment,
+                                     group);
   }
 }
 
@@ -53,7 +71,8 @@ int main(int argc, char** argv) {
 
   if (argc < 3) {
     std::cout << "usage: ./convert_binsparse [input_file.mtx] "
-                 "[output_file.hdf5] [optional: format {CSR, COO}]\n";
+                 "[output_file.hdf5] [optional: format {CSR, COO}] [optional: "
+                 "HDF5 group name]\n";
     return 1;
   }
 
@@ -61,6 +80,7 @@ int main(int argc, char** argv) {
   std::string output_file(argv[2]);
 
   std::string format;
+  std::optional<std::string> group;
 
   if (argc >= 4) {
     format = argv[3];
@@ -70,6 +90,10 @@ int main(int argc, char** argv) {
     }
   } else {
     format = "COO";
+  }
+
+  if (argc >= 5) {
+    group = argv[4];
   }
 
   auto [m, n, nnz, type, structure, comment] =
@@ -88,16 +112,16 @@ int main(int argc, char** argv) {
 
   if (max_size + 1 <= std::numeric_limits<uint8_t>::max()) {
     convert_to_binsparse<uint8_t>(input_file, output_file, type, format,
-                                  comment);
+                                  comment, group);
   } else if (max_size + 1 <= std::numeric_limits<uint16_t>::max()) {
     convert_to_binsparse<uint16_t>(input_file, output_file, type, format,
-                                   comment);
+                                   comment, group);
   } else if (max_size + 1 <= std::numeric_limits<uint32_t>::max()) {
     convert_to_binsparse<uint32_t>(input_file, output_file, type, format,
-                                   comment);
+                                   comment, group);
   } else if (max_size + 1 <= std::numeric_limits<uint64_t>::max()) {
     convert_to_binsparse<uint64_t>(input_file, output_file, type, format,
-                                   comment);
+                                   comment, group);
   } else {
     throw std::runtime_error(
         "Error! Matrix dimensions or NNZ too large to handle.");

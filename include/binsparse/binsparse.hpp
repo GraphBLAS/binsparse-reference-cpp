@@ -62,7 +62,6 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
   using json = nlohmann::json;
   auto data = json::parse(metadata);
 
-  std::cout << "Reading values...\n";
   auto binsparse_metadata = data["binsparse"];
 
   auto format = __detail::unalias_format(binsparse_metadata["format"]);
