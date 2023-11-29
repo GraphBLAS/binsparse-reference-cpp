@@ -294,6 +294,95 @@ inline MatrixType mmread(std::string file_path, bool one_indexed = true) {
   return m_out;
 }
 
+/// Read in the Matrix Market file at location `file_path` and
+/// return a data structure with the matrix.
+template <typename T>
+inline std::vector<T> mmread_array(std::string file_path,
+                                   bool one_indexed = true) {
+  using size_type = std::size_t;
+  using I = std::size_t;
+
+  std::ifstream f;
+
+  f.open(file_path.c_str());
+
+  if (!f.is_open()) {
+    // TODO better choice of exception.
+    throw std::runtime_error("mmread: cannot open " + file_path);
+  }
+
+  std::string buf;
+
+  // Make sure the file is matrix market matrix, coordinate, and check whether
+  // it is symmetric. If the matrix is symmetric.
+  // Error out if skew-symmetric or Hermitian.
+  std::getline(f, buf);
+  std::istringstream ss(buf);
+  std::string item;
+  ss >> item;
+  if (item != "%%MatrixMarket") {
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
+  }
+  ss >> item;
+  if (item != "matrix") {
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
+  }
+  ss >> item;
+  if (item != "array") {
+    throw std::runtime_error(file_path +
+                             " could not be parsed as a Matrix Market file.");
+  }
+  ss >> item;
+  assert(item != "pattern");
+
+  ss >> item;
+  assert(item == "general");
+
+  bool outOfComments = false;
+  while (!outOfComments) {
+    std::getline(f, buf);
+
+    if (buf[0] != '%') {
+      outOfComments = true;
+    }
+  }
+
+  I m, n, nnz;
+  // std::istringstream ss(buf);
+  ss.clear();
+  ss.str(buf);
+  ss >> m >> n;
+  nnz = m * n;
+
+  std::vector<T> m_out(m * n);
+
+  constexpr bool pattern = true;
+
+  size_type c = 0;
+  while (std::getline(f, buf)) {
+    T v;
+    std::istringstream ss(buf);
+    ss >> v;
+
+    I i = c % m;
+    I j = c / m;
+
+    m_out[i * n + j] = v;
+
+    c++;
+    if (c > nnz) {
+      throw std::runtime_error("read_MatrixMarket: error reading Matrix Market "
+                               "file, file has more nonzeros than reported.");
+    }
+  }
+
+  f.close();
+
+  return m_out;
+}
+
 } // namespace __detail
 
 } // namespace binsparse

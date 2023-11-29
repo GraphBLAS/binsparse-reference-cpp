@@ -15,6 +15,53 @@ namespace binsparse {
 
 inline constexpr double version = 0.1;
 
+template <typename T>
+void write_dense_vector(H5::Group& f, std::span<T> v,
+                        nlohmann::json user_keys = {}) {
+  hdf5_tools::write_dataset(f, "values", v);
+
+  using json = nlohmann::json;
+  json j;
+  j["binsparse"]["version"] = version;
+  j["binsparse"]["format"] = "DVEC";
+  j["binsparse"]["shape"] = {v.size()};
+  j["binsparse"]["nnz"] = v.size();
+  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  for (auto&& v : user_keys.items()) {
+    j[v.key()] = v.value();
+  }
+
+  hdf5_tools::set_attribute(f, "binsparse", j.dump(2));
+}
+
+template <typename T, typename Allocator = std::allocator<T>>
+auto read_dense_vector(std::string fname, Allocator&& alloc = Allocator{}) {
+  H5::H5File f(fname.c_str(), H5F_ACC_RDWR);
+
+  auto metadata = hdf5_tools::get_attribute(f, "binsparse");
+
+  using json = nlohmann::json;
+  auto data = json::parse(metadata);
+
+  auto binsparse_metadata = data["binsparse"];
+
+  auto format = __detail::unalias_format(binsparse_metadata["format"]);
+
+  assert(format == "DVEC");
+
+  auto nvalues = binsparse_metadata["shape"][0];
+  auto nnz = binsparse_metadata["nnz"];
+
+  assert(nvalues == nnz);
+
+  auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
+
+  assert(values.size() == nvalues);
+
+  return values;
+}
+
 // Dense Format
 
 template <typename T, typename I, typename Order>

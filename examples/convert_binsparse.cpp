@@ -67,6 +67,49 @@ void convert_to_binsparse(std::string input_file, std::string output_file,
   }
 }
 
+template <typename T>
+void convert_to_binsparse_vector(std::string input_file,
+                                 std::string output_file, std::string type,
+                                 std::string comment,
+                                 std::optional<std::string> group) {
+  H5::H5File file;
+  std::unique_ptr<H5::Group> f_p;
+
+  if (!group.has_value()) {
+    f_p = std::unique_ptr<H5::Group>(
+        new H5::H5File(output_file.c_str(), H5F_ACC_TRUNC));
+  } else {
+    file = H5::H5File(output_file.c_str(), H5F_ACC_RDWR);
+    H5::Group g = file.createGroup(group.value().c_str());
+    f_p = std::unique_ptr<H5::Group>(new H5::Group(g));
+  }
+
+  H5::Group& f = *f_p;
+
+  nlohmann::json user_keys;
+  user_keys["comment"] = comment;
+
+  auto x = binsparse::__detail::mmread_array<float>(input_file);
+  binsparse::write_dense_vector(f, std::span(x), user_keys);
+  std::cout << "Writing to binsparse file " << output_file << " as vector"
+            << std::endl;
+}
+
+inline void convert_to_binsparse_vector(std::string input_file,
+                                        std::string output_file,
+                                        std::string type, std::string comment,
+                                        std::optional<std::string> group = {}) {
+  if (type == "real") {
+    convert_to_binsparse_vector<float>(input_file, output_file, type, comment,
+                                       group);
+  } else if (type == "integer") {
+    convert_to_binsparse_vector<int64_t>(input_file, output_file, type, comment,
+                                         group);
+  } else {
+    throw std::runtime_error("convert_to_binsparse_vector: unsupported type");
+  }
+}
+
 int main(int argc, char** argv) {
 
   if (argc < 3) {
@@ -96,35 +139,41 @@ int main(int argc, char** argv) {
     group = argv[4];
   }
 
-  auto [m, n, nnz, type, structure, comment] =
+  auto [m, n, nnz, mm_format, type, structure, comment] =
       binsparse::mmread_metadata(input_file);
 
-  std::cout << "Matrix is " << m << " x " << n << " with " << nnz
-            << " values.\n";
-  std::cout << "Type: " << type << std::endl;
-  std::cout << "Structure: " << structure << std::endl;
-  std::cout << "Comment:\n";
-  std::cout << comment;
+  if (mm_format == "coordinate") {
+    std::cout << "Matrix is " << m << " x " << n << " with " << nnz
+              << " values.\n";
+    std::cout << "Type: " << type << std::endl;
+    std::cout << "Structure: " << structure << std::endl;
+    std::cout << "Comment:\n";
+    std::cout << comment;
 
-  assert(format == "COO" || format == "CSR");
+    assert(format == "COO" || format == "CSR");
 
-  auto max_size = std::max({m, n, nnz});
+    auto max_size = std::max({m, n, nnz});
 
-  if (max_size + 1 <= std::numeric_limits<uint8_t>::max()) {
-    convert_to_binsparse<uint8_t>(input_file, output_file, type, format,
-                                  comment, group);
-  } else if (max_size + 1 <= std::numeric_limits<uint16_t>::max()) {
-    convert_to_binsparse<uint16_t>(input_file, output_file, type, format,
-                                   comment, group);
-  } else if (max_size + 1 <= std::numeric_limits<uint32_t>::max()) {
-    convert_to_binsparse<uint32_t>(input_file, output_file, type, format,
-                                   comment, group);
-  } else if (max_size + 1 <= std::numeric_limits<uint64_t>::max()) {
-    convert_to_binsparse<uint64_t>(input_file, output_file, type, format,
-                                   comment, group);
+    if (max_size + 1 <= std::numeric_limits<uint8_t>::max()) {
+      convert_to_binsparse<uint8_t>(input_file, output_file, type, format,
+                                    comment, group);
+    } else if (max_size + 1 <= std::numeric_limits<uint16_t>::max()) {
+      convert_to_binsparse<uint16_t>(input_file, output_file, type, format,
+                                     comment, group);
+    } else if (max_size + 1 <= std::numeric_limits<uint32_t>::max()) {
+      convert_to_binsparse<uint32_t>(input_file, output_file, type, format,
+                                     comment, group);
+    } else if (max_size + 1 <= std::numeric_limits<uint64_t>::max()) {
+      convert_to_binsparse<uint64_t>(input_file, output_file, type, format,
+                                     comment, group);
+    } else {
+      throw std::runtime_error(
+          "Error! Matrix dimensions or NNZ too large to handle.");
+    }
+  } else if (mm_format == "array" && n == 1) {
+    convert_to_binsparse_vector(input_file, output_file, type, comment, group);
   } else {
-    throw std::runtime_error(
-        "Error! Matrix dimensions or NNZ too large to handle.");
+    throw std::runtime_error("Encountered unsupported MatrixMarket format");
   }
 
   return 0;

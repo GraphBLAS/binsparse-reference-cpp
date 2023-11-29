@@ -51,6 +51,7 @@ inline auto mmread_metadata(std::string file_path) {
 
   // Read in coordinate / array
   ss >> item;
+  std::string format = item;
 
   // Read in type of matrix (real / integer / complex / pattern)
   ss >> item;
@@ -77,9 +78,14 @@ inline auto mmread_metadata(std::string file_path) {
 
   ss.clear();
   ss.str(buf);
-  ss >> m >> n >> nnz;
+  ss >> m >> n;
+  if (format == "coordinate") {
+    ss >> nnz;
+  } else {
+    nnz = m * n;
+  }
 
-  return std::tuple(m, n, nnz, type, structure, comment);
+  return std::tuple(m, n, nnz, format, type, structure, comment);
 }
 
 } // namespace binsparse
