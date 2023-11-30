@@ -3,6 +3,7 @@
 #include <H5Cpp.h>
 #include <cassert>
 #include <ranges>
+#include <type_traits>
 #include <vector>
 
 #include <iostream>
@@ -120,6 +121,7 @@ inline H5::PredType get_type(H5::DataSet& dataset) {
 }
 
 template <typename H5GroupOrFile, std::ranges::contiguous_range R>
+  requires(!std::is_same_v<std::remove_cvref_t<R>, std::string>)
 void write_dataset(H5GroupOrFile& f, const std::string& label, R&& r) {
   using T = std::ranges::range_value_t<R>;
   hsize_t size = std::ranges::size(r);
@@ -130,6 +132,21 @@ void write_dataset(H5GroupOrFile& f, const std::string& label, R&& r) {
   dataset.write(std::ranges::data(r), get_hdf5_native_type<T>());
   dataset.close();
   dataspace.close();
+}
+
+template <typename H5GroupOrFile, std::ranges::contiguous_range R>
+  requires(std::is_same_v<std::remove_cvref_t<R>, std::string>)
+void write_dataset(H5GroupOrFile& f, const std::string& label, R&& r) {
+  H5::StrType string_type(H5::PredType::C_S1, r.size());
+  H5Tset_cset(string_type, H5T_CSET_UTF8);
+  hsize_t size = r.size();
+  H5::DataSpace dataspace(1, &size);
+
+  auto dataset = f.createDataSet(label.c_str(), string_type, H5S_SCALAR);
+
+  dataset.write(r.c_str(), string_type);
+
+  dataset.close();
 }
 
 inline std::string get_attribute(H5::H5Object& f, const std::string& key) {
@@ -151,6 +168,7 @@ inline std::string get_attribute(H5::H5Object& f, const std::string& key) {
 inline void set_attribute(H5::H5Object& f, const std::string& key,
                           const std::string& value) {
   H5::StrType string_type(H5::PredType::C_S1, value.size());
+  H5Tset_cset(string_type, H5T_CSET_UTF8);
   hsize_t size = value.size();
   H5::DataSpace dataspace(1, &size);
 

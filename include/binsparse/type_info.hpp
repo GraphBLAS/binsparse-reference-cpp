@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <functional>
 #include <type_traits>
 
 namespace binsparse {
