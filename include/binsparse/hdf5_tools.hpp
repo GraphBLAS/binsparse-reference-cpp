@@ -138,7 +138,7 @@ template <typename H5GroupOrFile, std::ranges::contiguous_range R>
   requires(std::is_same_v<std::remove_cvref_t<R>, std::string>)
 void write_dataset(H5GroupOrFile& f, const std::string& label, R&& r) {
   H5::StrType string_type(H5::PredType::C_S1, r.size());
-  H5Tset_cset(string_type, H5T_CSET_UTF8);
+  string_type.setCset(H5T_CSET_UTF8);
   hsize_t size = r.size();
   H5::DataSpace dataspace(1, &size);
 
@@ -168,7 +168,7 @@ inline std::string get_attribute(H5::H5Object& f, const std::string& key) {
 inline void set_attribute(H5::H5Object& f, const std::string& key,
                           const std::string& value) {
   H5::StrType string_type(H5::PredType::C_S1, value.size());
-  H5Tset_cset(string_type, H5T_CSET_UTF8);
+  string_type.setCset(H5T_CSET_UTF8);
   hsize_t size = value.size();
   H5::DataSpace dataspace(1, &size);
 
