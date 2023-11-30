@@ -147,8 +147,6 @@ int main(int argc, char** argv) {
               << " values.\n";
     std::cout << "Type: " << type << std::endl;
     std::cout << "Structure: " << structure << std::endl;
-    std::cout << "Comment:\n";
-    std::cout << comment;
 
     assert(format == "COO" || format == "CSR");
 

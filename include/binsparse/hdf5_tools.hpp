@@ -126,8 +126,13 @@ void write_dataset(H5GroupOrFile& f, const std::string& label, R&& r) {
   using T = std::ranges::range_value_t<R>;
   hsize_t size = std::ranges::size(r);
   H5::DataSpace dataspace(1, &size);
-  auto dataset =
-      f.createDataSet(label.c_str(), get_hdf5_standard_type<T>(), dataspace);
+
+  H5::DSetCreatPropList property_list;
+  property_list.setChunk(1, &size);
+  property_list.setDeflate(9);
+
+  auto dataset = f.createDataSet(label.c_str(), get_hdf5_standard_type<T>(),
+                                 dataspace, property_list);
 
   dataset.write(std::ranges::data(r), get_hdf5_native_type<T>());
   dataset.close();

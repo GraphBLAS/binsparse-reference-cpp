@@ -4,4 +4,5 @@ function(add_example example_name)
 endfunction()
 
 add_example(convert_binsparse)
+add_example(text2hdf5)
 add_example(inspect_binsparse)
