@@ -116,7 +116,8 @@ template <typename Fn, typename... Args>
 void invoke_visit_fn_impl_(std::vector<std::string> type_labels, Fn&& fn,
                            Args&&... args) {
   if constexpr (sizeof...(Args) <= 3) {
-    if (type_labels.size() == 1) {
+    // The first label we consume is the value label
+    if (type_labels.size() == 3) {
       auto type_label = type_labels.front();
       if (type_label == "uint8") {
         invoke_if_able(std::forward<Fn>(fn), std::uint8_t(),
@@ -155,6 +156,7 @@ void invoke_visit_fn_impl_(std::vector<std::string> type_labels, Fn&& fn,
         assert(false);
       }
     } else {
+      // The next two types are index types, which must be integrals.
       auto type_label = type_labels.back();
       type_labels.pop_back();
       if (type_label == "uint8") {
@@ -180,15 +182,6 @@ void invoke_visit_fn_impl_(std::vector<std::string> type_labels, Fn&& fn,
                               std::forward<Args>(args)...);
       } else if (type_label == "int64") {
         invoke_visit_fn_impl_(type_labels, std::forward<Fn>(fn), std::int64_t(),
-                              std::forward<Args>(args)...);
-      } else if (type_label == "float32") {
-        invoke_visit_fn_impl_(type_labels, std::forward<Fn>(fn), float(),
-                              std::forward<Args>(args)...);
-      } else if (type_label == "float64") {
-        invoke_visit_fn_impl_(type_labels, std::forward<Fn>(fn), double(),
-                              std::forward<Args>(args)...);
-      } else if (type_label == "bint8") {
-        invoke_visit_fn_impl_(type_labels, std::forward<Fn>(fn), bool(),
                               std::forward<Args>(args)...);
       } else {
         assert(false);

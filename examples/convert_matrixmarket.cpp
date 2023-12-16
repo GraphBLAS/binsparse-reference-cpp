@@ -6,13 +6,15 @@
 int main(int argc, char** argv) {
 
   if (argc < 2) {
-    std::cout << "usage: ./inspect_binsparse [input_file.mtx]\n";
+    std::cout << "usage: ./inspect_binsparse [matrix.bsp.h5]\n";
     return 1;
   }
 
   std::string input_file(argv[1]);
 
-  auto metadata = binsparse::inspect(input_file);
+  auto json = binsparse::inspect(input_file);
+
+  auto metadata = json["binsparse"];
 
   std::cout << "Inspecting Binsparse v" << metadata["version"] << " file...\n";
   std::cout << metadata["format"] << " format matrix of dimension "
