@@ -36,6 +36,6 @@ jobs:
         sudo apt-get install libhdf5-dev g++-12
         cmake -B build
     - name: Build
-      run: VERBOSE=true make -C build -j `nproc`
+      run: make -C build -j `nproc`
     - name: Test
       run: ./build/test/gtest/binsparse-tests
