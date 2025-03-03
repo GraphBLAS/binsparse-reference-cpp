@@ -10,9 +10,7 @@ function(download_data url file_name)
         DATASET_DIR
         ${DATASET_ARCHIVE})
 
- file(ARCHIVE_EXTRACT INPUT
-      ${DATASET_ARCHIVE}
-      ${DATASET_DIR})
+ file(ARCHIVE_EXTRACT INPUT ${DATASET_ARCHIVE} DESTINATION ${DATASET_DIR})
 
   message(STATUS "Downloading file ${DATASET_ARCHIVE} to ${DATASET_DIR}")
 endfunction()
