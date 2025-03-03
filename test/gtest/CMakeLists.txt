@@ -7,7 +7,7 @@ function(download_data url file_name)
 
  string(REPLACE
         ".tar.gz" ""
-        DATSET_DIR
+        DATASET_DIR
         ${DATASET_ARCHIVE})
 
  file(ARCHIVE_EXTRACT INPUT
