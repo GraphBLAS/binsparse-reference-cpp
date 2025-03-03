@@ -2,6 +2,7 @@
 
 #include <H5Cpp.h>
 #include <cassert>
+#include <cstdint>
 #include <ranges>
 #include <type_traits>
 #include <vector>

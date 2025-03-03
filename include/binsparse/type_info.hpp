@@ -45,8 +45,9 @@ struct type_info<uint64_t> {
   }
 };
 
-template <>
-struct type_info<std::size_t> {
+template <typename T>
+  requires std::is_same_v<T, std::size_t>
+struct type_info<T> {
   static constexpr auto label() noexcept {
     return "uint64";
   }
