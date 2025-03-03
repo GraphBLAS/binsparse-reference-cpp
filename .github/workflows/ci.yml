@@ -39,5 +39,18 @@ jobs:
       run: make -C build -j `nproc`
     - name: Test
       run: |
-        find . -iname "*.mtx"
+        ./build/test/gtest/binsparse-tests
+
+  macos:
+    runs-on: 'macos-latest'
+    steps:
+    - uses: actions/checkout@v4
+    - name: CMake
+      run: |
+        brew install hdf5
+        cmake -B build
+    - name: Build
+      run: make -C build -j
+    - name: Test
+      run: |
         ./build/test/gtest/binsparse-tests
