@@ -24,7 +24,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        cxx: [gcc, clang]
+        cxx: [g++-12, clang++]
     name: ${{ matrix.cxx }}
     env:
       CXX: ${{ matrix.cxx }}
