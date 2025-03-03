@@ -5,16 +5,16 @@ function(download_data url file_name)
        ${url}
        ${DATASET_ARCHIVE})
 
- string(REPLACE
+  string(REPLACE
         ".tar.gz" ""
         DATASET_DIR
         ${DATASET_ARCHIVE})
 
- cmake_path(REMOVE_FILENAME DATASET_DIR)
+  cmake_path(REMOVE_FILENAME DATASET_DIR)
 
- file(ARCHIVE_EXTRACT INPUT ${DATASET_ARCHIVE} DESTINATION ${DATASET_DIR})
+  file(ARCHIVE_EXTRACT INPUT ${DATASET_ARCHIVE} DESTINATION ${DATASET_DIR})
 
-  message(STATUS "Downloading file ${DATASET_ARCHIVE} to ${DATASET_DIR}")
+  message(STATUS "Downloading file ${DATASET_ARCHIVE}, extracting to ${DATASET_DIR}.")
 endfunction()
 
 enable_testing()
