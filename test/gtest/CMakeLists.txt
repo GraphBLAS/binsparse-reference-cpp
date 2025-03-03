@@ -13,6 +13,8 @@ function(download_data url file_name)
  file(ARCHIVE_EXTRACT INPUT
       ${DATASET_ARCHIVE}
       ${DATASET_DIR})
+
+  message(STATUS "Downloading file ${DATASET_ARCHIVE} to ${DATASET_DIR}")
 endfunction()
 
 enable_testing()
