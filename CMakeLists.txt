@@ -6,9 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(include)
 
-find_package(HDF5 REQUIRED COMPONENTS CXX)
-target_link_libraries(binsparse INTERFACE ${HDF5_CXX_LIBRARIES})
-target_include_directories(binsparse INTERFACE . ${HDF5_INCLUDE_DIRS})
+find_package(HDF5 REQUIRED COMPONENTS C CXX)
+target_link_libraries(binsparse INTERFACE ${HDF5_C_LIBRARIES} hdf5::hdf5_cpp)
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   # Dependencies needed only for examples/test
