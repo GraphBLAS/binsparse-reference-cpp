@@ -1,12 +1,8 @@
-#include <gtest/gtest.h>
-
-#include <fmt/core.h>
-
+#include "util.hpp"
 #include <binsparse/binsparse.hpp>
-
-inline std::vector file_paths({"1138_bus/1138_bus.mtx",
-                               "chesapeake/chesapeake.mtx",
-                               "mouse_gene/mouse_gene.mtx"});
+#include <filesystem>
+#include <fmt/core.h>
+#include <gtest/gtest.h>
 
 TEST(BinsparseReadWrite, COOFormat) {
   using T = float;
@@ -14,7 +10,10 @@ TEST(BinsparseReadWrite, COOFormat) {
 
   std::string binsparse_file = "out.bsp.hdf5";
 
-  for (auto&& file_path : file_paths) {
+  auto base_path = find_prefix(files.front());
+
+  for (auto&& file : files) {
+    auto file_path = base_path + file;
     auto x = binsparse::__detail::mmread<
         T, I, binsparse::__detail::coo_matrix_owning<T, I>>(file_path);
 
@@ -46,4 +45,6 @@ TEST(BinsparseReadWrite, COOFormat) {
     delete matrix_.rowind;
     delete matrix_.colind;
   }
+
+  std::filesystem::remove(binsparse_file);
 }
