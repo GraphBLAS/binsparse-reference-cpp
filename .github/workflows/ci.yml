@@ -38,4 +38,6 @@ jobs:
     - name: Build
       run: make -C build -j `nproc`
     - name: Test
-      run: ./build/test/gtest/binsparse-tests
+      run: |
+        find . -iname "*.mtx"
+        ./build/test/gtest/binsparse-tests
