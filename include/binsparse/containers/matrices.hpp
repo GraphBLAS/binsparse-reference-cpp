@@ -34,6 +34,7 @@ struct csr_matrix {
 
   I m, n, nnz;
   structure_t structure = general;
+  bool is_iso = false;
 };
 
 template <typename T, typename I>
@@ -44,6 +45,7 @@ struct csc_matrix {
 
   I m, n, nnz;
   structure_t structure = general;
+  bool is_iso = false;
 };
 
 template <typename T, typename I>
@@ -54,6 +56,7 @@ struct coo_matrix {
 
   I m, n, nnz;
   structure_t structure = general;
+  bool is_iso = false;
 };
 
 template <typename T, typename I = std::size_t, typename Order = row_major>
@@ -64,6 +67,7 @@ struct dense_matrix {
   structure_t structure = general;
 
   using order = Order;
+  bool is_iso = false;
 };
 
 } // namespace binsparse

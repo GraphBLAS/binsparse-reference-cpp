@@ -13,7 +13,7 @@
 
 namespace binsparse {
 
-inline constexpr double version = 0.1;
+inline const std::string version = "0.1";
 
 template <typename T>
 void write_dense_vector(H5::Group& f, std::span<T> v,
@@ -25,7 +25,7 @@ void write_dense_vector(H5::Group& f, std::span<T> v,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "DVEC";
   j["binsparse"]["shape"] = {v.size()};
-  j["binsparse"]["nnz"] = v.size();
+  j["binsparse"]["number_of_stored_values"] = v.size();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
 
   for (auto&& v : user_keys.items()) {
@@ -51,7 +51,7 @@ auto read_dense_vector(std::string fname, Allocator&& alloc = Allocator{}) {
   assert(format == "DVEC");
 
   auto nvalues = binsparse_metadata["shape"][0];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
 
   assert(nvalues == nnz);
 
@@ -76,8 +76,14 @@ void write_dense_matrix(H5::Group& f, dense_matrix<T, I, Order> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = __detail::get_matrix_format_string(m);
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.m * m.n;
-  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+  j["binsparse"]["number_of_stored_values"] = m.m * m.n;
+
+  if (!m.is_iso) {
+    j["binsparse"]["data_types"]["values"] =
+        std::string("iso[") + type_info<T>::label() + "]";
+  } else {
+    j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+  }
 
   if (m.structure != general) {
     j["binsparse"]["structure"] =
@@ -118,7 +124,13 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
+
+  bool is_iso = false;
+  if (std::string(binsparse_metadata["data_types"]["values"])
+          .starts_with("iso")) {
+    is_iso = true;
+  }
 
   auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
 
@@ -128,7 +140,8 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
     structure = __detail::parse_structure(binsparse_metadata["structure"]);
   }
 
-  return dense_matrix<T, I, Order>{values.data(), nrows, ncols, structure};
+  return dense_matrix<T, I, Order>{values.data(), nrows, ncols, structure,
+                                   is_iso};
 }
 
 // CSR Format
@@ -149,10 +162,16 @@ void write_csr_matrix(H5::Group& f, csr_matrix<T, I> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "CSR";
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["number_of_stored_values"] = m.nnz;
   j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
-  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  if (!m.is_iso) {
+    j["binsparse"]["data_types"]["values"] =
+        std::string("iso[") + type_info<T>::label() + "]";
+  } else {
+    j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+  }
 
   if (m.structure != general) {
     j["binsparse"]["structure"] =
@@ -189,7 +208,13 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
+
+  bool is_iso = false;
+  if (std::string(binsparse_metadata["data_types"]["values"])
+          .starts_with("iso")) {
+    is_iso = true;
+  }
 
   typename std::allocator_traits<
       std::remove_cvref_t<Allocator>>::template rebind_alloc<I>
@@ -206,7 +231,7 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
   }
 
   return csr_matrix<T, I>{values.data(), colind.data(), row_ptr.data(), nrows,
-                          ncols,         nnz,           structure};
+                          ncols,         nnz,           structure,      is_iso};
 }
 
 template <typename T, typename I>
@@ -232,10 +257,16 @@ void write_csc_matrix(H5::Group& f, csc_matrix<T, I> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "CSR";
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["number_of_stored_values"] = m.nnz;
   j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
-  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  if (!m.is_iso) {
+    j["binsparse"]["data_types"]["values"] =
+        std::string("iso[") + type_info<T>::label() + "]";
+  } else {
+    j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+  }
 
   if (m.structure != general) {
     j["binsparse"]["structure"] =
@@ -272,7 +303,13 @@ csc_matrix<T, I> read_csc_matrix(std::string fname, Allocator&& alloc) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
+
+  bool is_iso = false;
+  if (std::string(binsparse_metadata["data_types"]["values"])
+          .starts_with("iso")) {
+    is_iso = true;
+  }
 
   typename std::allocator_traits<
       std::remove_cvref_t<Allocator>>::template rebind_alloc<I>
@@ -289,7 +326,7 @@ csc_matrix<T, I> read_csc_matrix(std::string fname, Allocator&& alloc) {
   }
 
   return csc_matrix<T, I>{values.data(), rowind.data(), col_ptr.data(), nrows,
-                          ncols,         nnz,           structure};
+                          ncols,         nnz,           structure,      is_iso};
 }
 
 template <typename T, typename I>
@@ -315,10 +352,16 @@ void write_coo_matrix(H5::Group& f, coo_matrix<T, I> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "COO";
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["number_of_stored_values"] = m.nnz;
   j["binsparse"]["data_types"]["indices_0"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
-  j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+
+  if (!m.is_iso) {
+    j["binsparse"]["data_types"]["values"] =
+        std::string("iso[") + type_info<T>::label() + "]";
+  } else {
+    j["binsparse"]["data_types"]["values"] = type_info<T>::label();
+  }
 
   if (m.structure != general) {
     j["binsparse"]["structure"] =
@@ -357,7 +400,13 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
+
+  bool is_iso = false;
+  if (std::string(binsparse_metadata["data_types"]["values"])
+          .starts_with("iso")) {
+    is_iso = true;
+  }
 
   typename std::allocator_traits<
       std::remove_cvref_t<Allocator>>::template rebind_alloc<I>
@@ -374,7 +423,7 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
   }
 
   return coo_matrix<T, I>{values.data(), rows.data(), cols.data(), nrows,
-                          ncols,         nnz,         structure};
+                          ncols,         nnz,         structure,   is_iso};
 }
 
 template <typename T, typename I>

@@ -4,9 +4,8 @@
 #include <iostream>
 
 int main(int argc, char** argv) {
-
   if (argc < 2) {
-    std::cout << "usage: ./inspect_binsparse [matrix.bsp.h5]\n";
+    std::cout << "usage: ./convert_binsparse [matrix.bsp.h5]\n";
     return 1;
   }
 
@@ -18,8 +17,8 @@ int main(int argc, char** argv) {
 
   std::cout << "Inspecting Binsparse v" << metadata["version"] << " file...\n";
   std::cout << metadata["format"] << " format matrix of dimension "
-            << metadata["shape"] << " with " << metadata["nnz"]
-            << " nonzeros\n";
+            << metadata["shape"] << " with "
+            << metadata["number_of_stored_values"] << " nonzeros\n";
 
   if (metadata["format"] == "COO") {
     auto i0 = metadata["data_types"]["indices_0"];
