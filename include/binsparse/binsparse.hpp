@@ -13,7 +13,7 @@
 
 namespace binsparse {
 
-inline constexpr std::string version("0.1");
+inline constexpr char* version = "0.1";
 
 template <typename T>
 void write_dense_vector(H5::Group& f, std::span<T> v,
