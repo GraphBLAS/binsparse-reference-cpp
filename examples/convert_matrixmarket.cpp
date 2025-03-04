@@ -6,7 +6,7 @@
 int main(int argc, char** argv) {
 
   if (argc < 2) {
-    std::cout << "usage: ./inspect_binsparse [matrix.bsp.h5]\n";
+    std::cout << "usage: ./convert_binsparse [matrix.bsp.h5]\n";
     return 1;
   }
 

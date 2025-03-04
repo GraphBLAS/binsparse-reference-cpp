@@ -25,7 +25,7 @@ void write_dense_vector(H5::Group& f, std::span<T> v,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "DVEC";
   j["binsparse"]["shape"] = {v.size()};
-  j["binsparse"]["nnz"] = v.size();
+  j["binsparse"]["number_of_stored_values"] = v.size();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
 
   for (auto&& v : user_keys.items()) {
@@ -51,7 +51,7 @@ auto read_dense_vector(std::string fname, Allocator&& alloc = Allocator{}) {
   assert(format == "DVEC");
 
   auto nvalues = binsparse_metadata["shape"][0];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
 
   assert(nvalues == nnz);
 
@@ -76,7 +76,7 @@ void write_dense_matrix(H5::Group& f, dense_matrix<T, I, Order> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = __detail::get_matrix_format_string(m);
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.m * m.n;
+  j["binsparse"]["number_of_stored_values"] = m.m * m.n;
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
 
   if (m.structure != general) {
@@ -118,7 +118,7 @@ auto read_dense_matrix(std::string fname, Allocator&& alloc = Allocator{}) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
 
   auto values = hdf5_tools::read_dataset<T>(f, "values", alloc);
 
@@ -149,7 +149,7 @@ void write_csr_matrix(H5::Group& f, csr_matrix<T, I> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "CSR";
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["number_of_stored_values"] = m.nnz;
   j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
@@ -189,7 +189,7 @@ csr_matrix<T, I> read_csr_matrix(std::string fname, Allocator&& alloc) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
 
   typename std::allocator_traits<
       std::remove_cvref_t<Allocator>>::template rebind_alloc<I>
@@ -232,7 +232,7 @@ void write_csc_matrix(H5::Group& f, csc_matrix<T, I> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "CSR";
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["number_of_stored_values"] = m.nnz;
   j["binsparse"]["data_types"]["pointers_to_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
@@ -272,7 +272,7 @@ csc_matrix<T, I> read_csc_matrix(std::string fname, Allocator&& alloc) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
 
   typename std::allocator_traits<
       std::remove_cvref_t<Allocator>>::template rebind_alloc<I>
@@ -315,7 +315,7 @@ void write_coo_matrix(H5::Group& f, coo_matrix<T, I> m,
   j["binsparse"]["version"] = version;
   j["binsparse"]["format"] = "COO";
   j["binsparse"]["shape"] = {m.m, m.n};
-  j["binsparse"]["nnz"] = m.nnz;
+  j["binsparse"]["number_of_stored_values"] = m.nnz;
   j["binsparse"]["data_types"]["indices_0"] = type_info<I>::label();
   j["binsparse"]["data_types"]["indices_1"] = type_info<I>::label();
   j["binsparse"]["data_types"]["values"] = type_info<T>::label();
@@ -357,7 +357,7 @@ coo_matrix<T, I> read_coo_matrix(std::string fname, Allocator&& alloc) {
 
   auto nrows = binsparse_metadata["shape"][0];
   auto ncols = binsparse_metadata["shape"][1];
-  auto nnz = binsparse_metadata["nnz"];
+  auto nnz = binsparse_metadata["number_of_stored_values"];
 
   typename std::allocator_traits<
       std::remove_cvref_t<Allocator>>::template rebind_alloc<I>
